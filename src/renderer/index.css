@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --void: #01010a;
+  --deep: #030310;
+  --panel: #06060f;
+  --card: #0a0a18;
+  --border: rgba(255,255,255,0.05);
+  --t1: #f1f5f9;
+  --t2: #94a3b8;
+  --t3: #475569;
+  --t4: #1e293b;
+  --pb: #a855f7;
+  --purple: #7c3aed;
+  --cyan: #22d3ee;
+  --green: #22c55e;
+  --red: #ef4444;
+  --amber: #f59e0b;
+  --blue: #3b82f6;
+  --pink: #ec4899;
+}
+
 /* Boot sequence — orbital rings */
 .boot-ring {
   position: absolute;
@@ -80,7 +100,8 @@
 .card-markdown h1,
 .card-markdown h2,
 .card-markdown h3 {
-  color: #e5e7eb;
+  color: var(--t1);
+  font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   margin-top: 0.75rem;
   margin-bottom: 0.25rem;
@@ -105,8 +126,8 @@
 .card-markdown ul li { list-style-type: disc; }
 .card-markdown ol li { list-style-type: decimal; }
 
-.card-markdown strong { color: #f3f4f6; font-weight: 600; }
-.card-markdown em { color: #d1d5db; }
+.card-markdown strong { color: var(--t1); font-weight: 600; }
+.card-markdown em { color: var(--t2); }
 
 .card-markdown code {
   background: rgba(255, 255, 255, 0.06);
@@ -137,24 +158,24 @@
 .card-markdown th {
   text-align: left;
   padding: 0.375rem 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  color: #e5e7eb;
+  border-bottom: 1px solid var(--border);
+  color: var(--t1);
   font-weight: 600;
 }
 .card-markdown td {
   padding: 0.25rem 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border);
 }
 
 .card-markdown blockquote {
   border-left: 2px solid rgba(168, 85, 247, 0.5);
   padding-left: 0.75rem;
-  color: #9ca3af;
+  color: var(--t2);
   margin-bottom: 0.5rem;
 }
 
 .card-markdown a {
-  color: #a78bfa;
+  color: var(--pb);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -163,6 +184,22 @@
 }
 
 .card-markdown hr {
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--border);
   margin: 0.5rem 0;
+}
+
+/* Price Ticker — infinite scroll */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-track {
+  display: flex;
+  animation: ticker-scroll 40s linear infinite;
+  will-change: transform;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
 }

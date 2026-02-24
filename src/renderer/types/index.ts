@@ -34,6 +34,18 @@ export interface WebviewData {
 
 export type CanvasItem = CardData | WebviewData
 
+// --- Edge connections between nodes ---
+export type EdgeStrength = 'strong' | 'weak' | 'speculative'
+
+export interface EdgeData {
+  id: string
+  fromNodeId: string
+  toNodeId: string
+  strength: EdgeStrength
+  label?: string
+  animated?: boolean
+}
+
 // --- Real-time data ---
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
 

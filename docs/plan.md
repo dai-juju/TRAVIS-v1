@@ -1,237 +1,314 @@
-# TRAVIS Phase 1 — Development Plan v2
+# TRAVIS — Development Plan v3
+
+---
+
+# PHASE 1 (COMPLETE ✅)
+
+## Phase 1-1: Project Setup ✅
+## Phase 1-2: Boot Sequence ✅
+## Phase 1-3: Layout (Canvas + Chat Panel) ✅
+## Phase 1-4: Claude API Integration ✅
+## Phase 1-5: Card Rendering + Cinematic Spawn ✅
+## Phase 1-6: Webview Rendering ✅
+## Phase 1-7: Real-Time Data (WebSocket) ✅
+## Phase 1-8: Investigation Mode ✅
+
+---
+
+# PHASE 2: MOSAIC INTELLIGENCE PLATFORM
 
 ## Overview
-Build the complete Phase 1 experience:
-Boot sequence → Chat with AI → Cinematic card spawns → Real-time data → Investigation Mode.
-Each phase builds on the previous one. Complete phases in order.
+Transform TRAVIS from "chat → cards" into a full Mosaic Intelligence Platform.
+Phase 2 is split into 4 sub-phases (2A → 2B → 2C → 2D). Complete in order.
 
 ---
 
-## Phase 1-1: Project Setup
-**Goal**: Electron + React + TypeScript project that opens a window.
+## Phase 2A: Foundation Enhancement
+**Goal**: Upgrade existing app with tab system, new design system, hover-reveal node edges, and price ticker.
 
-- [ ] Initialize npm project with package.json
-- [ ] Install dependencies: electron, react, react-dom, typescript, vite, @vitejs/plugin-react, tailwindcss, zustand, framer-motion
-- [ ] Install dev dependencies: electron-builder, concurrently
-- [ ] Create vite.config.ts for renderer
-- [ ] Create tsconfig.json (main + renderer)
-- [ ] Create src/main/index.ts — basic Electron window that loads renderer
-- [ ] Create src/renderer/index.html — root HTML with dark theme
-- [ ] Create src/renderer/main.tsx — React entry point
-- [ ] Create src/renderer/App.tsx — placeholder "Hello TRAVIS"
-- [ ] Configure npm scripts: dev, build
-- [ ] Verify: `npm run dev` opens Electron window showing "Hello TRAVIS"
+### 2A-1: Design System Migration
+- [ ] Add Rajdhani font (Google Fonts CDN) for headers/titles
+- [ ] Update CSS variables with new color palette from CLAUDE.md Design System
+- [ ] Update all existing components to use new colors:
+  - void (#01010a) for deepest backgrounds
+  - deep (#030310) for panel backgrounds
+  - card (#0a0a18) for card backgrounds
+  - Update border colors to rgba(255,255,255,0.05)
+- [ ] Update text colors: t1 (#f1f5f9), t2 (#94a3b8), t3 (#475569), t4 (#1e293b)
+- [ ] Update boot sequence to use new design system
+- [ ] Verify: All existing UI reflects new color/font scheme
 
-**Done when**: Electron window opens with React rendering inside.
+### 2A-2: Tab System
+- [ ] Create src/renderer/stores/useTabStore.ts — activeTab: 'command' | 'feed'
+- [ ] Create src/renderer/components/TabBar.tsx
+  - Two tabs: "◈ COMMAND" / "◈ FEED"
+  - Active tab: purple underline + subtle glow
+  - Position: top of app, below Electron title bar
+  - Dark background matching --deep color
+- [ ] Update App.tsx: Boot → TabBar + conditional content rendering
+  - Tab 'command' → existing Canvas + ChatPanel layout
+  - Tab 'feed' → placeholder "FEED coming soon"
+  - Tab switch preserves state (no remount)
+- [ ] Verify: Can switch tabs, COMMAND tab works exactly as before
 
----
+### 2A-3: Node-Edge Connections (Hover-Reveal)
+- [ ] Update useCanvasStore.ts: add edges[] array and edge CRUD methods
+  - addEdge(from, to, strength, label?)
+  - removeEdge(id)
+  - Edge type: { id, fromNodeId, toNodeId, strength, label?, animated }
+  - hoveredNodeId: string | null
+  - pinnedNodeIds: Set<string>
+- [ ] Create src/renderer/components/NodeEdge.tsx
+  - SVG lines/paths between node centers
+  - **Hidden by default** (opacity 0)
+  - **Hover on node**: fade in that node's direct edges (opacity 0.6, 0.2s transition)
+  - **Click on node**: pin edges visible
+  - **Shift+Click**: show 2nd-degree edges
+  - **Click empty canvas**: un-pin all
+  - Line styles: strong(solid 2px), weak(thin 1px), speculative(dotted 1px)
+  - Colors: match source node category color
+  - Optional: animated particles along edge (subtle, slow)
+  - Lines update position when nodes are dragged
+- [ ] Canvas.tsx: render edges as SVG layer beneath cards
+  - Add global toggle button to show/hide ALL edges
+- [ ] Update claude.ts: when AI spawns multiple related cards, auto-create edges
+  - Add optional `relatedTo?: string[]` field to spawn_card tool
+  - After spawning, create edges between related cards
+- [ ] Verify: Hover on card → its edges appear. Click elsewhere → edges hide. Clean canvas by default.
 
-## Phase 1-2: Boot Sequence
-**Goal**: Cinematic startup animation before main interface appears.
+### 2A-4: Price Ticker Bar
+- [ ] Create src/renderer/components/PriceTicker.tsx
+  - Fixed bar at bottom of app (below StatusBar)
+  - Infinite horizontal scroll (CSS animation, right-to-left)
+  - Items: BTC, ETH, SOL, BNB, XRP + S&P 500, NASDAQ, DXY, GOLD, OIL
+  - Each: SYMBOL $price ▲/▼change%
+  - Green for up, Red for down
+  - Click item → useCanvasStore.addCard() with that symbol
+- [ ] Subscribe crypto tickers to Binance WebSocket (reuse existing DataSource)
+- [ ] Traditional assets: free REST API polling (Yahoo Finance proxy or similar)
+  - Poll every 60 seconds
+  - If API unavailable, show last known price with gray indicator
+- [ ] Update App.tsx layout: add PriceTicker below StatusBar
+- [ ] Verify: Scrolling ticker with live prices, click creates card
 
-- [ ] Create src/renderer/components/BootSequence.tsx
-  - Dark screen (#0a0a0f) → TRAVIS logo fade in with purple glow
-  - Orbital ring animation around logo (CSS or Framer Motion)
-  - System status text scroll: "Connecting...", "AI online...", "Canvas ready."
-  - Logo dissolves → main interface slides in
-  - Total duration: 3-4 seconds
-- [ ] Design assets: TRAVIS logo (text-based is fine), purple (#a855f7) + cyan (#22d3ee)
-- [ ] Font: JetBrains Mono for system text
-- [ ] Update App.tsx: Show BootSequence first, then transition to main layout
-- [ ] Verify: App opens → boot animation plays → main screen appears
+### 2A-5: Layout Update for COMMAND Tab
+- [ ] Restructure COMMAND tab layout to 3-panel:
+  - Left: placeholder panel (220px, for News Feed in 2B)
+  - Center: existing Canvas
+  - Right: existing ChatPanel (264px)
+- [ ] Left panel shows "Breaking News Feed — coming soon" placeholder
+- [ ] Verify: 3-panel layout works, canvas still functional
 
-**Done when**: App boots with cinematic animation before showing canvas.
+### 2A-6: AI Data Enhancement (Tavily + Real-Time Context)
+- [ ] Add Tavily web search as a new Claude tool
+  - Tool name: search_web
+  - Input: { query: string }
+  - Implementation: Main process에서 Tavily API 호출 (API key를 Settings에 추가)
+  - Claude가 필요할 때 자율적으로 검색 가능
+- [ ] Add Tavily API key input to SettingsModal.tsx (기존 Claude API key 아래)
+- [ ] Create src/main/tavily.ts — Tavily API 호출 로직
+- [ ] Add IPC handler for Tavily search in ipc.ts
+- [ ] Inject real-time market data into system prompt automatically
+  - When user message contains a coin symbol → Binance REST API로 현재 시세 가져오기
+  - 가격, 24h 변동률, 거래량을 [REAL-TIME MARKET DATA] 섹션으로 시스템 프롬프트에 주입
+- [ ] Update claude.ts:
+  - search_web tool definition 추가 (7번째 도구)
+  - System prompt에 [REAL-TIME MARKET DATA] 섹션 추가
+  - search_web tool result 처리 (multi-turn)
+- [ ] Verify: "BTC 분석해줘" → AI가 실시간 가격 기반으로 분석 + 필요시 웹 검색
 
----
-
-## Phase 1-3: Layout (Canvas + Chat Panel)
-**Goal**: Split screen into canvas area and chat panel.
-
-- [ ] Create src/renderer/stores/useChatStore.ts — messages array
-- [ ] Create src/renderer/stores/useCanvasStore.ts — cards array, positions
-- [ ] Create src/renderer/components/ChatPanel.tsx
-  - Message list (scrollable)
-  - Text input at bottom
-  - Send button (or Enter to send)
-  - User messages appear immediately in chat
-  - Gear icon in header for settings
-- [ ] Create src/renderer/components/Canvas.tsx
-  - Dark background (#0a0a0f) with subtle grid pattern
-  - Pan by dragging empty space
-  - Zoom with mouse wheel
-  - Empty for now, will render cards later
-- [ ] Update App.tsx — flex layout: Canvas (75%) + ChatPanel (25%)
-- [ ] TailwindCSS dark theme setup
-- [ ] Verify: Can type messages and see them in chat, can pan/zoom canvas
-
-**Done when**: Split layout works, chat messages display, canvas pans and zooms.
-
----
-
-## Phase 1-4: Claude API Integration
-**Goal**: Chat messages go to Claude API and get responses with tool use.
-
-- [ ] Create src/renderer/types/index.ts — define Card, WebviewCard, Message, ToolCall types
-- [ ] Create src/renderer/services/claude.ts
-  - sendMessage(messages, canvasState, contextPrompt) function
-  - System prompt builder (TRAVIS role + context prompt + canvas state)
-  - Tool definitions (spawn_card, spawn_webview, remove_cards, rearrange, update_card, open_investigation)
-  - Parse response: extract tool_use blocks + text content
-  - Handle tool results and multi-turn tool use
-- [ ] Create src/main/ipc.ts — IPC bridge for API calls
-  - Renderer sends message → Main process calls Claude API (keeps API key safe)
-  - Main returns response to renderer
-- [ ] Create src/renderer/stores/useSettingsStore.ts
-  - apiKey, contextPrompt, model (stored in localStorage)
-- [ ] Create Settings modal (gear icon in ChatPanel header)
-  - API Key input (password field)
-  - Context Prompt textarea
-  - Model selector dropdown
-  - Save to localStorage, load on app start
-- [ ] Wire up ChatPanel: user sends message → claude.ts → show AI text response in chat
-- [ ] Add loading state while waiting for Claude response
-- [ ] Add error handling (API errors, network errors, missing API key prompt)
-- [ ] Verify: Type a message, get Claude's text response in chat
-
-**Done when**: Can chat with Claude through the app. Tool calls are parsed but not yet rendered.
-
----
-
-## Phase 1-5: Card Rendering + Cinematic Spawn
-**Goal**: AI's spawn_card tool calls appear as draggable cards with cinematic animation.
-
-- [ ] Create src/renderer/components/SpawnAnimation.tsx
-  - Phase 1: Purple glow point appears at target position (0.15s)
-  - Phase 2: Glow expands to card outline (0.3s)
-  - Phase 3: Card content fades in top-to-bottom (0.2s)
-  - Phase 4: Subtle settle/bounce (0.1s)
-  - For group spawns: cascade with 150ms delay between cards
-- [ ] Create src/renderer/components/Card.tsx
-  - Renders title (header bar) + content (markdown → HTML)
-  - Support inline images (from images[] parameter)
-  - Close (×) button → removes card from store
-  - Draggable by header (mousedown/mousemove/mouseup)
-  - Resizable by corner handle
-  - Dark card style (dark gray bg, light text, subtle border, purple accent)
-  - Double-click header → triggers Investigation Mode
-- [ ] Install markdown renderer (react-markdown + remark-gfm for tables)
-- [ ] Update useCanvasStore.ts
-  - addCard(card) — adds card with auto-calculated position + triggers spawn animation
-  - removeCard(id) — removes card with fade-out
-  - updateCardPosition(id, x, y) — for drag
-  - updateCardSize(id, w, h) — for resize
-- [ ] Smart placement: new cards placed to right of last card, wrap to next row if full
-- [ ] Camera auto-pan: after spawn, smoothly pan canvas to center new card group
-- [ ] Wire up: claude.ts spawn_card tool call → SpawnAnimation → useCanvasStore.addCard()
-- [ ] Canvas.tsx renders all cards from store
-- [ ] Verify: Ask Claude something → cards spawn with cinematic animation on canvas
-
-**Done when**: AI-generated cards appear with glow animation, can be dragged and closed.
+**Done when**: New design applied, tabs work, hover-reveal edges, price ticker scrolls, AI has web search + real-time data.
 
 ---
 
-## Phase 1-6: Webview Rendering
-**Goal**: AI's spawn_webview tool calls show real websites on canvas.
+## Phase 2B: Breaking News Feed + Free Data Sources
+**Goal**: Left panel shows live breaking news from free sources. Drag news to canvas.
 
-- [ ] Create src/renderer/components/WebviewCard.tsx
-  - Uses Electron <webview> tag to embed URL
-  - Header: title + URL display + reload button + close button
-  - Draggable and resizable like regular cards
-  - Spawns with same cinematic animation as regular cards
-  - Handle webview security: sandbox, allowpopups configuration
-  - Handle X-Frame-Options failures gracefully (show "Open in browser" fallback)
-- [ ] Update useCanvasStore to handle webview cards alongside regular cards
-- [ ] Wire up: claude.ts spawn_webview tool call → useCanvasStore.addWebview()
-- [ ] Handle remove_cards and rearrange tool calls
-- [ ] Verify: Ask Claude to open a website → website appears on canvas with animation
+### 2B-1: Feed Data Service
+- [ ] Create src/renderer/services/feedService.ts
+  - FeedSource interface (like DataSource but for news/events)
+  - CryptoPanic integration (free tier: crypto news aggregation)
+    - API: https://cryptopanic.com/api/v1/posts/?auth_token=FREE
+    - Parse: title, source, url, kind (news/media), published_at
+  - CoinGecko integration (market data, free tier)
+  - CoinMarketCap / CMC integration (free tier)
+  - Fear & Greed Index (Alternative.me, free)
+  - Exchange announcements (Binance, OKX, Bybit, Upbit — RSS/free endpoints)
+  - DeFiLlama (TVL data, free)
+  - Poll-based: fetch every 30-60 seconds
+  - Normalize all sources into common FeedItem format
+- [ ] Create src/renderer/types/ additions:
+  - FeedItem: { id, title, source, url, category, importance, timestamp, summary?, location? }
+  - FeedCategory: 'macro' | 'crypto' | 'onchain' | 'exchange' | 'social' | 'stocks' | 'world'
+  - FeedImportance: 'critical' | 'alert' | 'signal' | 'info'
 
-**Done when**: AI can spawn both info cards and live websites on canvas.
+### 2B-2: Feed Store
+- [ ] Create src/renderer/stores/useFeedStore.ts
+  - items: FeedItem[] (sorted by timestamp, newest first)
+  - addItem(item) — prepend to list, cap at 200 items
+  - filters: { categories: Set, importance: Set }
+  - toggleFilter(category/importance)
+  - Connection status per source
 
----
+### 2B-3: News Feed UI (Left Panel)
+- [ ] Create src/renderer/components/NewsFeed.tsx
+  - Replace left placeholder with live news feed
+  - Header: "LIVE FEED" + connection indicator
+  - Scrollable list of FeedItem components
+  - New items slide in at top with animation
+  - Auto-scroll, pause on hover
+- [ ] Create src/renderer/components/FeedItem.tsx
+  - Left edge: category color strip (amber/purple/cyan/red/green/blue/pink)
+  - Importance badge: CRITICAL(red bg) / ALERT(yellow) / SIGNAL(purple) / INFO(gray)
+  - Title text (importance affects brightness/size)
+  - Source + timestamp
+  - Click → detail modal with full content
+  - **Draggable**: drag item → drop on canvas → creates new card node
+- [ ] Implement drag-to-canvas:
+  - onDragStart on FeedItem
+  - onDrop on Canvas → useCanvasStore.addCard() from feed item data
+  - AI auto-analyzes and suggests edges to existing nodes
+- [ ] Verify: Live news appears, can drag onto canvas, importance levels visible
 
-## Phase 1-7: Real-Time Data (WebSocket)
-**Goal**: Cards with crypto symbols update live with real-time price data.
+### 2B-4: AI Relevance Scoring
+- [ ] When new feed items arrive, batch-send to Claude for relevance scoring
+  - Claude scores 0-100 relevance to user's context prompt
+  - Score displayed as subtle bar on each feed item
+  - AI does NOT filter — only scores. All items remain visible.
+  - Scoring is async (items appear immediately, score fills in later)
+- [ ] Verify: Feed items show relevance scores after brief delay
 
-- [ ] Create src/renderer/services/binanceWs.ts
-  - WebSocket manager: connect, subscribe, unsubscribe, reconnect
-  - Subscribe to streams: {symbol}@ticker (price, volume, change%)
-  - Parse incoming messages → update useRealtimeStore
-  - Auto-reconnect on disconnect with exponential backoff
-  - Track latency per stream (server timestamp vs local time)
-- [ ] Create src/renderer/services/binanceRest.ts
-  - Initial data fetch: GET /api/v3/ticker/24hr for symbol
-  - Fallback when WebSocket is not yet connected
-- [ ] Create src/renderer/stores/useRealtimeStore.ts
-  - Live price data per symbol
-  - Latency per symbol
-  - Connection status (connected / reconnecting / disconnected)
-- [ ] Create src/renderer/components/LatencyIndicator.tsx
-  - Small dot + latency text in card header
-  - Green (< 1s) / Yellow (1-5s) / Red (> 5s) / Gray (no connection)
-- [ ] Update Card.tsx
-  - If card has `symbol`, subscribe to real-time data on mount
-  - Price changes flash green (up) or red (down) for 0.5s
-  - Numbers animate smoothly between old and new values
-  - Show LatencyIndicator in card header
-  - Unsubscribe on card removal
-- [ ] Show overall connection status in app status bar (bottom or top)
-- [ ] Verify: Spawn a BTC card → price updates every second with green/red flash
-
-**Done when**: Cards with symbols show live prices, latency is displayed, reconnection works.
-
----
-
-## Phase 1-8: Investigation Mode
-**Goal**: Full-screen analysis dashboard when double-clicking a card.
-
-- [ ] Create src/renderer/components/InvestigationMode.tsx
-  - Full-screen overlay with blur backdrop on canvas
-  - Header: "🔍 {symbol} — {name}" + "INVESTIGATION MODE" badge + close button
-  - 6-panel grid (3 columns × 2 rows)
-  - Subtle grid lines in background
-  - Scan line animation (horizontal light sweep across top, 3.5s loop)
-  - Staggered panel entrance animation (0.1s delay per panel)
-- [ ] Panel component (InvestigationPanel.tsx)
-  - Header: title + LLM tag badge + action buttons
-  - Scrollable body content
-  - Drag to reposition within grid area
-  - Resize via corner handle
-  - Maximize button (⤢) → panel fills entire grid
-  - Pop-out button (↗) → opens content in overlay popup
-  - Fold button (─) → collapse to header only
-- [ ] Panel content generation for coin cards:
-  - Panel 1 (main): Overview — price, change%, mcap, volume, RSI, MACD, funding (real-time)
-  - Panel 2: Chart — candlestick chart (can use lightweight-charts library or TradingView widget)
-  - Panel 3: News — latest news items (from claude.ts AI call or cached)
-  - Panel 4: Whale — recent whale transactions
-  - Panel 5: On-chain / Unlocks — token unlock schedule, exchange flows
-  - Panel 6: Sector — same-sector coin comparison
-- [ ] Panel content for non-coin cards:
-  - Panel 1 (main): selected card's full content
-  - Remaining panels: content from other visible canvas cards for cross-reference
-- [ ] Wire up: double-click card header → open InvestigationMode
-  - Also wire up: open_investigation tool call from Claude
-- [ ] Close: ESC key or X button → fade out → return to canvas (state preserved)
-- [ ] Verify: Double-click a coin card → full-screen 6-panel grid appears with all data
-
-**Done when**: Investigation Mode opens with 6 draggable/resizable panels, all data populated.
+**Done when**: Left panel shows live news, drag-to-canvas works, AI scores relevance.
 
 ---
 
-## Success Criteria
-The app is "done" for Phase 1 when this scenario works:
+## Phase 2C: FEED Tab (World Map + Multi-Column Feed + Calendar)
+**Goal**: Second tab with world map, 7-column raw feed, and event calendar.
 
-1. App opens with cinematic boot sequence
-2. User enters API key in Settings
-3. User types "TAO 분석해줘"
-4. AI spawns 2-3 info cards with cinematic glow animation
-5. AI spawns a TradingView chart webview
-6. AI responds in chat with a summary
-7. Cards show live prices updating in real-time with latency indicator
-8. User can drag and rearrange cards
-9. User can close cards
-10. User double-clicks TAO card → Investigation Mode opens with 6 panels
-11. User can drag/resize/maximize panels in Investigation Mode
-12. User presses ESC → returns to canvas
-13. User types "화면 정리해" → AI removes cards
-14. User types "바이낸스 열어줘" → AI spawns Binance webview
+### 2C-1: FEED Tab Layout
+- [ ] Create src/renderer/components/MosaicFeed.tsx
+  - Top section: WorldMap (left) + FeedSidebar (right, 300px)
+  - Bottom section: expandable multi-column view
+  - Drag handle between top/bottom to expand columns view
+- [ ] Update TabBar: clicking "FEED" shows MosaicFeed component
+- [ ] Verify: Tab switching works, basic layout renders
+
+### 2C-2: World Map
+- [ ] Install react-simple-maps (lightweight world map library)
+- [ ] Create src/renderer/components/WorldMap.tsx
+  - Dark theme world map (gray landmass on void background)
+  - Event pins at locations from feed items (where location data available)
+  - Pin colors: match feed level (critical=red, alert=yellow, signal=purple, info=gray)
+  - Ping/pulse animation on new events
+  - Hover pin → tooltip (title + time + source)
+  - Click pin → detail modal + "Add to COMMAND" button
+- [ ] Verify: Map renders, pins appear for geolocated feed items
+
+### 2C-3: Feed Sidebar
+- [ ] Create feed sidebar for FEED tab (right, 300px)
+  - Unified feed (all categories mixed, sorted by time)
+  - Filter toggles per category (7 toggles matching 7 columns)
+  - Search bar (filter by keyword)
+  - Reuse FeedItem component from 2B
+  - Click item → modal + "Add to COMMAND" button
+- [ ] Verify: Sidebar shows all feeds, filters work
+
+### 2C-4: Multi-Column Raw Feed
+- [ ] Create src/renderer/components/FeedColumn.tsx
+  - Single column: header (category name + color) + scrollable items
+  - Each column independently scrolls
+  - Items styled by importance level (HIGH/MED/LOW brightness)
+- [ ] Bottom panel of MosaicFeed: **7 columns** side by side
+  - MACRO | CRYPTO | ON-CHAIN | EXCHANGE | SOCIAL | STOCKS | WORLD
+  - Expandable: drag handle to pull up, slide-up animation
+  - Each column receives items from useFeedStore filtered by category
+- [ ] Verify: 7 columns visible, each with relevant category items
+
+### 2C-5: Event Calendar
+- [ ] Create src/renderer/components/EventCalendar.tsx
+  - Monthly calendar grid view
+  - Events marked on dates with category color dots
+  - Event types: token unlocks, FOMC, CPI, earnings, hard forks
+  - Click date → list of events for that day
+  - Click event → detail modal
+- [ ] Data sources:
+  - CoinMarketCal API (crypto events, free tier)
+  - FOMC/CPI schedule (known dates, hardcoded for current year)
+- [ ] Position: accessible from FEED tab (sidebar tab or separate section)
+- [ ] Verify: Calendar renders, events visible, clickable
+
+**Done when**: FEED tab fully functional with map, 7 feed columns, and calendar.
+
+---
+
+## Phase 2D: Advanced Features
+**Goal**: Insight Pulse, enhanced AI, Investigation Mode upgrade, more data sources.
+
+### 2D-1: Insight Pulse (Cross-Analysis Alerts)
+- [ ] AI automatically analyzes relationships between canvas nodes
+- [ ] When pattern detected: glowing 💡 chip appears on relevant nodes
+- [ ] Click chip → popup with:
+  - Pattern description
+  - Historical pattern matching
+  - Risk factors
+  - Confidence score (0-100%)
+- [ ] Triggers: new node added, price significant change, new critical news
+- [ ] Verify: Multi-node pattern detected and displayed
+
+### 2D-2: Enhanced AI Chat
+- [ ] Typing animation (stream response character by character)
+- [ ] Canvas-chat linkage:
+  - AI response highlights related nodes
+  - Click node → sends "Analyze this" to AI with node context
+- [ ] Loading experience: pulsing animation + progress text
+- [ ] AI proactively suggests new nodes when context warrants
+- [ ] Verify: Typing effect works, node click → AI analysis
+
+### 2D-3: Investigation Mode Upgrade
+- [ ] AI fills each panel dynamically (not just Overview)
+  - Chart: embed TradingView widget or lightweight-charts
+  - News: live news from feedService filtered by coin
+  - Whale: data from free whale tracking sources
+  - On-chain: basic on-chain metrics
+  - Sector: auto-comparison of same-sector coins
+- [ ] Panel drag-to-reposition within grid
+- [ ] Pop-out button (panel → floating overlay)
+- [ ] Verify: All 6 panels have real dynamic data
+
+### 2D-4: Additional Data Sources
+- [ ] Binance Futures WebSocket (wss://fstream.binance.com/ws)
+  - Funding rate, open interest
+  - New DataSource implementation: BinanceFuturesSource
+- [ ] Additional exchanges (as DataSource implementations):
+  - Upbit WebSocket
+  - Bybit WebSocket
+- [ ] Additional free APIs:
+  - CoinGecko (expanded usage)
+  - Whale Alert (free tier)
+  - GDELT (global events)
+- [ ] Verify: Multiple data sources active, Investigation panels populated
+
+### 2D-5: Webview Content Recognition
+- [ ] Capture webview screen content (title, meta, or screenshot)
+- [ ] Send webview context to Claude for relationship analysis
+- [ ] Auto-create edges between webview and related canvas nodes
+- [ ] Update edges when user navigates to different page within webview
+
+**Done when**: Insight Pulse works, AI chat enhanced, Investigation panels filled, multiple data sources, webview content recognized.
+
+---
+
+## Phase 2 Success Criteria
+
+1. App opens → boot → COMMAND tab with 3-panel layout
+2. Left panel shows live breaking news (CryptoPanic + Fear&Greed + exchange announcements)
+3. Price ticker scrolls at bottom with live prices
+4. User types "BTC 분석해줘" → cards spawn, hover reveals connection edges
+5. User drags a news item from feed onto canvas → new node with auto-edges
+6. User switches to FEED tab → world map with event pins
+7. User expands bottom panel → 7 columns of categorized raw feed
+8. User clicks calendar → sees upcoming FOMC, token unlocks
+9. Back to COMMAND → 💡 Insight Pulse chip appears on BTC node
+10. User clicks chip → sees cross-analysis pattern with confidence score
+11. User double-clicks node → Investigation Mode with all 6 panels populated
+12. AI chat shows typing animation, clicking nodes triggers AI analysis

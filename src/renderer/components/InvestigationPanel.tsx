@@ -12,7 +12,7 @@ interface InvestigationPanelProps {
 const TAG_COLORS: Record<string, { bg: string; text: string }> = {
   STREAM: { bg: 'rgba(34,211,238,0.15)', text: '#22d3ee' },
   CLAUDE: { bg: 'rgba(168,85,247,0.15)', text: '#a855f7' },
-  LOCAL: { bg: 'rgba(107,114,128,0.15)', text: '#9ca3af' },
+  LOCAL: { bg: 'rgba(107,114,128,0.15)', text: '#94a3b8' },
 }
 
 export default function InvestigationPanel({ panel, index, isMain }: InvestigationPanelProps) {
@@ -25,8 +25,8 @@ export default function InvestigationPanel({ panel, index, isMain }: Investigati
     <motion.div
       className="flex flex-col rounded-lg border overflow-hidden"
       style={{
-        backgroundColor: '#13131d',
-        borderColor: isMain ? 'rgba(168,85,247,0.4)' : 'rgba(255,255,255,0.08)',
+        backgroundColor: '#0a0a18',
+        borderColor: isMain ? 'rgba(168,85,247,0.4)' : 'rgba(255,255,255,0.05)',
         boxShadow: isMain ? '0 0 20px rgba(168,85,247,0.15)' : 'none',
         gridColumn: panel.isMaximized ? '1 / -1' : undefined,
         gridRow: panel.isMaximized ? '1 / -1' : undefined,
@@ -41,7 +41,7 @@ export default function InvestigationPanel({ panel, index, isMain }: Investigati
     >
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 select-none flex-shrink-0">
-        <span className="text-xs font-bold text-gray-200 flex-1 truncate">
+        <span className="text-xs font-bold text-t1 flex-1 truncate font-rajdhani">
           {panel.title}
         </span>
 
@@ -56,7 +56,7 @@ export default function InvestigationPanel({ panel, index, isMain }: Investigati
         {/* Fold */}
         <button
           onClick={() => toggleFold(panel.id)}
-          className="text-gray-600 hover:text-gray-300 transition-colors"
+          className="text-t4 hover:text-t2 transition-colors"
           title={panel.isFolded ? 'Expand' : 'Fold'}
         >
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -67,7 +67,7 @@ export default function InvestigationPanel({ panel, index, isMain }: Investigati
         {/* Maximize */}
         <button
           onClick={() => toggleMaximize(panel.id)}
-          className="text-gray-600 hover:text-gray-300 transition-colors"
+          className="text-t4 hover:text-t2 transition-colors"
           title={panel.isMaximized ? 'Restore' : 'Maximize'}
         >
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -82,7 +82,7 @@ export default function InvestigationPanel({ panel, index, isMain }: Investigati
 
       {/* Body */}
       {!panel.isFolded && (
-        <div className="flex-1 overflow-y-auto px-3 py-2 card-markdown text-sm text-gray-300 min-h-0">
+        <div className="flex-1 overflow-y-auto px-3 py-2 card-markdown text-sm text-t2 min-h-0">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{panel.content}</ReactMarkdown>
         </div>
       )}

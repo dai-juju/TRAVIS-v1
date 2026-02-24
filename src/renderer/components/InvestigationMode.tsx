@@ -28,7 +28,7 @@ export default function InvestigationMode() {
   return (
     <motion.div
       className="fixed inset-0 z-50 flex flex-col"
-      style={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}
+      style={{ backgroundColor: 'rgba(1,1,10,0.9)', backdropFilter: 'blur(8px)' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -40,7 +40,7 @@ export default function InvestigationMode() {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-white/5 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <span className="text-lg font-bold text-gray-100">
+          <span className="text-lg font-bold text-t1 font-rajdhani">
             {displayTitle}
           </span>
           <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 tracking-widest">
@@ -49,7 +49,7 @@ export default function InvestigationMode() {
         </div>
         <button
           onClick={close}
-          className="text-gray-500 hover:text-gray-200 transition-colors p-1"
+          className="text-t3 hover:text-t1 transition-colors p-1"
           title="Close (ESC)"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

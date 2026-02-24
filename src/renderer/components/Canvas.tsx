@@ -4,14 +4,17 @@ import { useCanvasStore } from '../stores/useCanvasStore'
 import SpawnAnimation from './SpawnAnimation'
 import Card from './Card'
 import WebviewCard from './WebviewCard'
+import EdgeLayer from './EdgeLayer'
 import type { CardData, WebviewData } from '../types'
 
 export default function Canvas() {
   const viewport = useCanvasStore((s) => s.viewport)
   const setViewport = useCanvasStore((s) => s.setViewport)
   const cards = useCanvasStore((s) => s.cards)
+  const clearPins = useCanvasStore((s) => s.clearPins)
   const containerRef = useRef<HTMLDivElement>(null)
   const isPanning = useRef(false)
+  const didPan = useRef(false)
   const panStart = useRef({ x: 0, y: 0 })
 
   // --- Pan ---
@@ -19,12 +22,14 @@ export default function Canvas() {
     // 카드 위에서 시작된 이벤트는 무시 (카드가 stopPropagation 처리)
     if (e.button !== 0) return
     isPanning.current = true
+    didPan.current = false
     const { x, y } = useCanvasStore.getState().viewport
     panStart.current = { x: e.clientX - x, y: e.clientY - y }
   }, [])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isPanning.current) return
+    didPan.current = true
     setViewport({
       x: e.clientX - panStart.current.x,
       y: e.clientY - panStart.current.y,
@@ -32,8 +37,13 @@ export default function Canvas() {
   }, [setViewport])
 
   const handleMouseUp = useCallback(() => {
+    // 빈 캔버스 클릭 (패닝 없이 마우스 떼기) → 핀 해제
+    if (isPanning.current && !didPan.current) {
+      clearPins()
+    }
     isPanning.current = false
-  }, [])
+    didPan.current = false
+  }, [clearPins])
 
   // --- Zoom (non-passive listener for preventDefault) ---
   useEffect(() => {
@@ -70,8 +80,8 @@ export default function Canvas() {
       ref={containerRef}
       className="flex-1 h-full relative overflow-hidden select-none cursor-grab active:cursor-grabbing"
       style={{
-        backgroundColor: '#0a0a0f',
-        backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)',
+        backgroundColor: '#01010a',
+        backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)',
         backgroundSize: `${gridSize}px ${gridSize}px`,
         backgroundPosition: `${gridOffsetX}px ${gridOffsetY}px`,
       }}
@@ -87,6 +97,9 @@ export default function Canvas() {
           transformOrigin: '0 0',
         }}
       >
+        {/* Edge layer — 카드 아래에 렌더링 */}
+        <EdgeLayer />
+
         <AnimatePresence mode="popLayout">
           {cards.map((item) => {
             if (item.type === 'card') {

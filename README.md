@@ -26,6 +26,13 @@ AI-powered cryptocurrency market analysis desktop app. Chat naturally with an AI
 - **Connection Status Bar** — Real-time WebSocket connection status at the bottom of the app
 - **Settings** — Configure API key, Claude model, and custom context prompt
 
+### Phase 2A — Foundation Enhancement
+
+- **Design System** — New color palette (void/deep/card), Rajdhani font for headers, CSS variables, updated all components
+- **Tab System** — COMMAND / FEED tabs with instant switching and state preservation (no remount)
+- **Node-Edge Connections** — Hover-reveal SVG edges between related cards, pin/unpin, auto-edge from AI via `relatedTo`
+- **Price Ticker Bar** — Bottom scrolling ticker with real-time crypto prices (BTC, ETH, SOL, BNB, XRP) via Binance WebSocket
+
 ### Example
 
 ```
@@ -45,6 +52,12 @@ User: "BTC 분석해줘"
 | 1-6 | Webview Rendering (embedded websites) | Done |
 | 1-7 | Real-Time Data (Binance WebSocket + latency) | Done |
 | 1-8 | Investigation Mode (6-panel analysis grid) | Done |
+| 2A-1 | Design System Migration | Done |
+| 2A-2 | Tab System (COMMAND / FEED) | Done |
+| 2A-3 | Node-Edge Connections (hover-reveal) | Done |
+| 2A-4 | Price Ticker Bar (real-time crypto) | Done |
+| 2A-5 | Layout Update (3-panel COMMAND) | Next |
+| 2A-6 | AI Data Enhancement (Tavily + real-time context) | Planned |
 
 ## Tech Stack
 

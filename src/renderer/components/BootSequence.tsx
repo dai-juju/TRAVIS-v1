@@ -34,7 +34,7 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
 
   return (
     <motion.div
-      className="fixed inset-0 bg-[#0a0a0f] flex flex-col items-center justify-center z-50"
+      className="fixed inset-0 bg-void flex flex-col items-center justify-center z-50"
       animate={{ opacity: fading ? 0 : 1 }}
       transition={{ duration: 0.6, ease: 'easeInOut' }}
     >
@@ -60,17 +60,17 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
             <div className="relative">
               {/* Glow layer */}
               <span
-                className="absolute inset-0 text-6xl font-bold tracking-[0.25em] text-purple-500 blur-2xl opacity-60 select-none"
+                className="absolute inset-0 text-6xl font-bold tracking-[0.25em] text-purple-500 blur-2xl opacity-60 select-none font-rajdhani"
                 aria-hidden="true"
               >
                 TRAVIS
               </span>
               {/* Gradient text */}
-              <h1 className="relative text-6xl font-bold tracking-[0.25em] bg-gradient-to-br from-purple-500 to-cyan-400 bg-clip-text text-transparent">
+              <h1 className="relative text-6xl font-bold tracking-[0.25em] bg-gradient-to-br from-purple-500 to-cyan-400 bg-clip-text text-transparent font-rajdhani">
                 TRAVIS
               </h1>
             </div>
-            <p className="mt-3 text-sm tracking-[0.3em] uppercase text-gray-500 font-mono">
+            <p className="mt-3 text-sm tracking-[0.3em] uppercase text-t3 font-mono">
               Shape Your Market
             </p>
           </div>
@@ -83,7 +83,7 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
           {STATUS_MESSAGES.map((msg, i) => (
             <motion.p
               key={i}
-              className="text-cyan-400/80"
+              className="text-accent-cyan/80"
               initial={{ opacity: 0, x: -10 }}
               animate={{
                 opacity: i < visibleStatuses ? (fading ? 0 : 0.8) : 0,

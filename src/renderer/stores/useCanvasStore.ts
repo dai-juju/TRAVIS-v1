@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { CanvasItem, CardData, WebviewData } from '../types'
+import type { CanvasItem, CardData, WebviewData, EdgeData, EdgeStrength } from '../types'
 
 interface Viewport {
   x: number
@@ -9,6 +9,10 @@ interface Viewport {
 
 interface CanvasState {
   cards: CanvasItem[]
+  edges: EdgeData[]
+  hoveredNodeId: string | null
+  pinnedNodeIds: string[]
+  showAllEdges: boolean
   viewport: Viewport
   setViewport: (viewport: Partial<Viewport>) => void
   resetViewport: () => void
@@ -20,6 +24,12 @@ interface CanvasState {
   updateCardSize: (id: string, width: number, height: number) => void
   updateCardContent: (id: string, content: string) => void
   rearrangeCards: (layout: 'grid' | 'stack') => void
+  addEdge: (from: string, to: string, strength: EdgeStrength, label?: string) => void
+  removeEdge: (id: string) => void
+  setHoveredNode: (id: string | null) => void
+  togglePinNode: (id: string) => void
+  clearPins: () => void
+  toggleShowAllEdges: () => void
 }
 
 const DEFAULT_VIEWPORT: Viewport = { x: 0, y: 0, zoom: 1 }
@@ -49,6 +59,10 @@ function calculateNextPosition(cards: CanvasItem[], width: number, height: numbe
 
 export const useCanvasStore = create<CanvasState>((set, get) => ({
   cards: [],
+  edges: [],
+  hoveredNodeId: null,
+  pinnedNodeIds: [],
+  showAllEdges: false,
   viewport: { ...DEFAULT_VIEWPORT },
 
   setViewport: (update) =>
@@ -111,9 +125,11 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   removeCard: (id) =>
     set((state) => ({
       cards: state.cards.filter((c) => c.id !== id),
+      edges: state.edges.filter((e) => e.fromNodeId !== id && e.toNodeId !== id),
+      pinnedNodeIds: state.pinnedNodeIds.filter((nid) => nid !== id),
     })),
 
-  removeAllCards: () => set({ cards: [] }),
+  removeAllCards: () => set({ cards: [], edges: [], pinnedNodeIds: [], hoveredNodeId: null }),
 
   updateCardPosition: (id, x, y) =>
     set((state) => ({
@@ -158,4 +174,47 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         }),
       }
     }),
+
+  // --- Edge CRUD ---
+  addEdge: (from, to, strength, label) => {
+    const { edges } = get()
+    // 중복 방지
+    const exists = edges.some(
+      (e) => (e.fromNodeId === from && e.toNodeId === to) ||
+             (e.fromNodeId === to && e.toNodeId === from)
+    )
+    if (exists) return
+
+    const edge: EdgeData = {
+      id: crypto.randomUUID(),
+      fromNodeId: from,
+      toNodeId: to,
+      strength,
+      label,
+    }
+    set((state) => ({ edges: [...state.edges, edge] }))
+  },
+
+  removeEdge: (id) =>
+    set((state) => ({
+      edges: state.edges.filter((e) => e.id !== id),
+    })),
+
+  // --- Hover / Pin ---
+  setHoveredNode: (id) => set({ hoveredNodeId: id }),
+
+  togglePinNode: (id) =>
+    set((state) => {
+      const isPinned = state.pinnedNodeIds.includes(id)
+      return {
+        pinnedNodeIds: isPinned
+          ? state.pinnedNodeIds.filter((nid) => nid !== id)
+          : [...state.pinnedNodeIds, id],
+      }
+    }),
+
+  clearPins: () => set({ pinnedNodeIds: [] }),
+
+  toggleShowAllEdges: () =>
+    set((state) => ({ showAllEdges: !state.showAllEdges })),
 }))

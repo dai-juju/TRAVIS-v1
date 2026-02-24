@@ -15,6 +15,8 @@ export default function Card({ card }: CardProps) {
   const updateCardPosition = useCanvasStore((s) => s.updateCardPosition)
   const updateCardSize = useCanvasStore((s) => s.updateCardSize)
   const removeCard = useCanvasStore((s) => s.removeCard)
+  const setHoveredNode = useCanvasStore((s) => s.setHoveredNode)
+  const togglePinNode = useCanvasStore((s) => s.togglePinNode)
   const openInvestigation = useInvestigationStore((s) => s.open)
 
   const subscribe = useRealtimeStore((s) => s.subscribe)
@@ -24,6 +26,7 @@ export default function Card({ card }: CardProps) {
   const [flash, setFlash] = useState<'up' | 'down' | null>(null)
 
   const isDragging = useRef(false)
+  const didDrag = useRef(false)
   const isResizing = useRef(false)
   const dragStart = useRef({ x: 0, y: 0, cardX: 0, cardY: 0 })
   const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0 })
@@ -50,6 +53,7 @@ export default function Card({ card }: CardProps) {
       if (e.button !== 0) return
       e.stopPropagation()
       isDragging.current = true
+      didDrag.current = false
       const zoom = useCanvasStore.getState().viewport.zoom
       dragStart.current = {
         x: e.clientX / zoom,
@@ -60,6 +64,7 @@ export default function Card({ card }: CardProps) {
 
       const handleMouseMove = (ev: MouseEvent) => {
         if (!isDragging.current) return
+        didDrag.current = true
         const z = useCanvasStore.getState().viewport.zoom
         const dx = ev.clientX / z - dragStart.current.x
         const dy = ev.clientY / z - dragStart.current.y
@@ -119,25 +124,34 @@ export default function Card({ card }: CardProps) {
     [card.id, card.width, card.height, updateCardSize]
   )
 
+  const handleHeaderClick = useCallback(() => {
+    // 드래그 후에는 pin 토글하지 않음
+    if (didDrag.current) return
+    togglePinNode(card.id)
+  }, [card.id, togglePinNode])
+
   const accentColor = getAccentColor(card.cardType)
 
   return (
     <div
-      className="h-full flex flex-col rounded-lg overflow-hidden border border-white/10 bg-[#16161e] shadow-xl"
+      className="h-full flex flex-col rounded-lg overflow-hidden border border-white/5 bg-card shadow-xl"
       style={{ minWidth: 240 }}
+      onMouseEnter={() => setHoveredNode(card.id)}
+      onMouseLeave={() => setHoveredNode(null)}
     >
       {/* Header */}
       <div
         className="flex items-center gap-2 px-3 py-2 cursor-grab active:cursor-grabbing select-none"
         style={{ borderBottom: `1px solid ${accentColor}33` }}
         onMouseDown={handleDragStart}
+        onClick={handleHeaderClick}
         onDoubleClick={(e) => { e.stopPropagation(); openInvestigation(card) }}
       >
         <div
           className="w-2 h-2 rounded-full flex-shrink-0"
           style={{ backgroundColor: accentColor }}
         />
-        <span className="flex-1 text-xs font-bold text-gray-200 truncate tracking-wide">
+        <span className="flex-1 text-xs font-bold text-t1 truncate tracking-wide font-rajdhani">
           {card.title}
         </span>
         {card.symbol && (
@@ -148,7 +162,7 @@ export default function Card({ card }: CardProps) {
             e.stopPropagation()
             removeCard(card.id)
           }}
-          className="text-gray-600 hover:text-gray-300 transition-colors flex-shrink-0"
+          className="text-t4 hover:text-t2 transition-colors flex-shrink-0"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -168,7 +182,7 @@ export default function Card({ card }: CardProps) {
                 : 'transparent',
           }}
         >
-          <span className="text-base font-bold text-gray-100 font-mono">
+          <span className="text-base font-bold text-t1 font-mono">
             ${ticker.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
           </span>
           <span
@@ -180,14 +194,14 @@ export default function Card({ card }: CardProps) {
           >
             {ticker.change24h >= 0 ? '+' : ''}{ticker.change24h.toFixed(2)}%
           </span>
-          <span className="text-[10px] text-gray-500 font-mono ml-auto">
+          <span className="text-[10px] text-t3 font-mono ml-auto">
             Vol {formatVolume(ticker.volume24h)}
           </span>
         </div>
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-3 py-2 card-markdown text-sm text-gray-300">
+      <div className="flex-1 overflow-y-auto px-3 py-2 card-markdown text-sm text-t2">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{card.content}</ReactMarkdown>
 
         {card.images && card.images.length > 0 && (
@@ -201,7 +215,7 @@ export default function Card({ card }: CardProps) {
                   loading="lazy"
                 />
                 {img.caption && (
-                  <figcaption className="text-xs text-gray-500 mt-1">
+                  <figcaption className="text-xs text-t3 mt-1">
                     {img.caption}
                   </figcaption>
                 )}
@@ -216,7 +230,7 @@ export default function Card({ card }: CardProps) {
         className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize opacity-0 hover:opacity-100 transition-opacity"
         onMouseDown={handleResizeStart}
       >
-        <svg className="w-4 h-4 text-gray-600" viewBox="0 0 16 16" fill="currentColor">
+        <svg className="w-4 h-4 text-t4" viewBox="0 0 16 16" fill="currentColor">
           <path d="M14 14H10L14 10V14ZM14 8V6L6 14H8L14 8Z" />
         </svg>
       </div>

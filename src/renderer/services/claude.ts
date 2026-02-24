@@ -13,6 +13,14 @@ You can spawn multiple cards at once. Be generous with visual information.
 Always think about what data would help the user understand the topic better.
 Include relevant images, charts, and visual data in cards when helpful.
 When spawning coin-related cards, include the symbol parameter (e.g. "BTCUSDT") so they receive real-time price updates.
+
+IMPORTANT — Card Connections:
+When you spawn multiple related cards, use the relatedTo field to link them together.
+The first card you spawn has no relatedTo. After it is spawned, you receive its cardId in the tool result.
+Subsequent related cards should include relatedTo: [previousCardId] using that ID.
+This creates visual connection lines between cards on the canvas, helping users see relationships.
+Always link related cards — for example, if you spawn a BTC analysis card and then a BTC news card, the news card should reference the analysis card's ID.
+
 Respond in the same language the user uses.`
 
 // --- Tool Definitions ---
@@ -20,7 +28,7 @@ const TOOLS = [
   {
     name: 'spawn_card',
     description:
-      'Create an information card on the canvas. Use this to display analysis, data, summaries, comparisons, news, or price information.',
+      'Create an information card on the canvas. Use this to display analysis, data, summaries, comparisons, news, or price information. When spawning multiple related cards, link them using the relatedTo field with IDs from previously spawned cards.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -58,6 +66,11 @@ const TOOLS = [
             required: ['url'],
           },
           description: 'Optional images to display in the card',
+        },
+        relatedTo: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of card IDs that this card is related to. When spawning multiple cards about the same topic, link them together using this field. Use the cardId returned from previous spawn_card tool results.',
         },
       },
       required: ['title', 'content'],
@@ -196,6 +209,19 @@ function executeTool(
         type: 'card',
       })
       spawnIndex++
+
+      // 관련 카드와 엣지 자동 생성
+      const relatedTo = input.relatedTo as string[] | undefined
+      if (relatedTo && relatedTo.length > 0) {
+        const latestStore = useCanvasStore.getState()
+        for (const targetId of relatedTo) {
+          const targetExists = latestStore.cards.some((c) => c.id === targetId)
+          if (targetExists) {
+            latestStore.addEdge(id, targetId, 'weak')
+          }
+        }
+      }
+
       return JSON.stringify({ status: 'spawned', cardId: id })
     }
 
