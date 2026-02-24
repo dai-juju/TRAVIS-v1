@@ -1,5 +1,6 @@
-import type { ToolCall, ApiMessage, ApiContentBlock } from '../types'
+import type { ToolCall, ApiMessage, ApiContentBlock, CardData } from '../types'
 import { useCanvasStore } from '../stores/useCanvasStore'
+import { useInvestigationStore } from '../stores/useInvestigationStore'
 
 // --- System Prompt ---
 const BASE_SYSTEM_PROMPT = `You are TRAVIS, an AI assistant that helps users analyze cryptocurrency markets.
@@ -73,11 +74,11 @@ const TOOLS = [
         title: { type: 'string', description: 'Display title for the webview' },
         width: {
           type: 'number',
-          description: 'Width in pixels (default: 600)',
+          description: 'Width in pixels (default: 900)',
         },
         height: {
           type: 'number',
-          description: 'Height in pixels (default: 450)',
+          description: 'Height in pixels (default: 700)',
         },
       },
       required: ['url', 'title'],
@@ -233,8 +234,13 @@ function executeTool(
     }
 
     case 'open_investigation': {
-      // Phase 1-8에서 구현
-      return JSON.stringify({ status: 'opened', cardId: input.cardId })
+      const cardId = input.cardId as string
+      const card = store.cards.find((c) => c.id === cardId && c.type === 'card') as CardData | undefined
+      if (card) {
+        useInvestigationStore.getState().open(card)
+        return JSON.stringify({ status: 'opened', cardId })
+      }
+      return JSON.stringify({ status: 'error', message: 'Card not found' })
     }
 
     default:

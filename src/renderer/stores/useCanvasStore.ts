@@ -87,8 +87,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
   addWebview: (webInput) => {
     const id = webInput.id || crypto.randomUUID()
-    const width = webInput.width || 600
-    const height = webInput.height || 450
+    const width = webInput.width || 900
+    const height = webInput.height || 700
     const { cards } = get()
     const pos = webInput.x !== undefined && webInput.y !== undefined
       ? { x: webInput.x, y: webInput.y }

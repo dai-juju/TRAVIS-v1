@@ -3,7 +3,8 @@ import { AnimatePresence } from 'framer-motion'
 import { useCanvasStore } from '../stores/useCanvasStore'
 import SpawnAnimation from './SpawnAnimation'
 import Card from './Card'
-import type { CardData } from '../types'
+import WebviewCard from './WebviewCard'
+import type { CardData, WebviewData } from '../types'
 
 export default function Canvas() {
   const viewport = useCanvasStore((s) => s.viewport)
@@ -103,7 +104,20 @@ export default function Canvas() {
                 </SpawnAnimation>
               )
             }
-            // Phase 1-6에서 WebviewCard 렌더링
+            if (item.type === 'webview') {
+              const webviewData = item as WebviewData
+              return (
+                <SpawnAnimation
+                  key={item.id}
+                  x={item.x}
+                  y={item.y}
+                  width={item.width}
+                  height={item.height}
+                >
+                  <WebviewCard card={webviewData} />
+                </SpawnAnimation>
+              )
+            }
             return null
           })}
         </AnimatePresence>

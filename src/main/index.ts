@@ -11,8 +11,11 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
+      webviewTag: true,
     },
   })
+
+  win.maximize()
 
   if (!app.isPackaged) {
     win.loadURL('http://localhost:5173')

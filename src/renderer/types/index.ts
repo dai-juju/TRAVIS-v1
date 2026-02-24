@@ -34,6 +34,22 @@ export interface WebviewData {
 
 export type CanvasItem = CardData | WebviewData
 
+// --- Real-time data ---
+export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
+
+export interface TickerData {
+  symbol: string
+  price: number
+  prevPrice: number
+  change24h: number
+  volume24h: number
+  high24h: number
+  low24h: number
+  latency: number
+  lastUpdate: number
+  source: string
+}
+
 // --- Claude API message format ---
 export type ApiContentBlock =
   | { type: 'text'; text: string }

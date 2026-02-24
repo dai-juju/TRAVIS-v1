@@ -25,7 +25,7 @@ export default function SpawnAnimation({
         left: x,
         top: y,
         width,
-        minHeight: height,
+        height,
       }}
       initial={{ scale: 0.3, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
