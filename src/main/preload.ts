@@ -23,12 +23,12 @@ contextBridge.exposeInMainWorld('api', {
   fetchFearGreed: () => ipcRenderer.invoke('feed:feargreed'),
 
   // Investigation Mode APIs
-  fetchKlines: (symbol: string, interval: string, limit: number) =>
-    ipcRenderer.invoke('binance:klines', { symbol, interval, limit }),
   fetchRecentTrades: (symbol: string, limit: number) =>
     ipcRenderer.invoke('binance:trades', { symbol, limit }),
   fetchMultipleTickers: (symbols: string[]) =>
     ipcRenderer.invoke('binance:multi-ticker', { symbols }),
   fetchCoinData: (coinId: string) =>
     ipcRenderer.invoke('coingecko:coin-data', { coinId }),
+  searchCoinId: (symbol: string) =>
+    ipcRenderer.invoke('coingecko:search', { symbol }),
 })

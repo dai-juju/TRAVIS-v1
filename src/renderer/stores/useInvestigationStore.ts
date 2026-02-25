@@ -103,7 +103,7 @@ function buildCoinPanels(card: CardData): PanelState[] {
 
   return [
     { id: 'overview', title: 'Overview', content: overviewContent, tag: 'STREAM', panelType: 'markdown', isMaximized: false, isFolded: false },
-    { id: 'chart', title: 'Chart', content: '', tag: 'LOCAL', panelType: 'chart', isMaximized: false, isFolded: false, isLoading: true },
+    { id: 'chart', title: 'Chart', content: '', tag: 'LOCAL', panelType: 'chart', isMaximized: false, isFolded: false, isLoading: false },
     { id: 'news', title: 'News', content: '', tag: 'CLAUDE', panelType: 'news', isMaximized: false, isFolded: false },
     { id: 'whale', title: 'Whale Activity', content: '', tag: 'STREAM', panelType: 'whale', isMaximized: false, isFolded: false, isLoading: true },
     { id: 'onchain', title: 'On-chain Data', content: '', tag: 'LOCAL', panelType: 'onchain', isMaximized: false, isFolded: false, isLoading: true },
@@ -163,37 +163,44 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 }
 
 async function loadPanelData(symbol: string) {
+  const clean = symbol.replace(/(USDT|BUSD|FDUSD|USD|KRW|BTC)$/i, '') || symbol
+  symbol = clean.toUpperCase()
   const store = useInvestigationStore.getState()
-  const coinId = SYMBOL_TO_COINGECKO[symbol] ?? null
   const sectorInfo = SECTOR_MAP[symbol]
-  const TIMEOUT = 8000
+  const TIMEOUT = 10000
 
+  // Phase A — Resolve CoinGecko ID (sequential)
+  let coinId: string | null = SYMBOL_TO_COINGECKO[symbol] ?? null
+  if (!coinId) {
+    try {
+      coinId = (await withTimeout(api.searchCoinId(symbol) as Promise<string | null>, 5000)) ?? null
+    } catch {
+      coinId = null
+    }
+  }
+
+  // Phase B — Parallel fetch (chart excluded, TradingView handles it)
   try {
-    const [klinesResult, tradesResult, coinResult, sectorResult] = await Promise.allSettled([
-      withTimeout(api.fetchKlines(symbol, '1h', 100) as Promise<unknown>, TIMEOUT),
-      withTimeout(api.fetchRecentTrades(symbol, 500) as Promise<unknown>, TIMEOUT),
+    const [tradesResult, coinResult, sectorResult] = await Promise.allSettled([
+      withTimeout(
+        api.fetchRecentTrades(symbol, 500) as Promise<{ trades: Array<{ quoteQty: string; [key: string]: unknown }>; pair: string }>,
+        TIMEOUT
+      ),
       coinId
-        ? withTimeout(api.fetchCoinData(coinId) as Promise<unknown>, TIMEOUT)
+        ? withTimeout(api.fetchCoinData(coinId) as Promise<{ categories?: string[]; [key: string]: unknown }>, TIMEOUT)
         : Promise.reject(new Error('Unknown coin')),
       sectorInfo
         ? withTimeout(api.fetchMultipleTickers(sectorInfo.symbols) as Promise<unknown>, TIMEOUT)
         : Promise.reject(new Error('No sector data')),
     ])
 
-    // Chart panel
-    if (klinesResult.status === 'fulfilled') {
-      store.updatePanel('chart', { data: { klines: klinesResult.value }, isLoading: false, error: null })
-    } else {
-      store.updatePanel('chart', { isLoading: false, error: `Data unavailable for ${symbol}` })
-    }
-
     // Whale panel - filter trades >= $100K
     if (tradesResult.status === 'fulfilled') {
-      const allTrades = tradesResult.value as Array<{ quoteQty: string; [key: string]: unknown }>
+      const { trades: allTrades, pair } = tradesResult.value
       const whaleTrades = allTrades.filter((t) => parseFloat(t.quoteQty) >= 100000)
-      store.updatePanel('whale', { data: { trades: whaleTrades }, isLoading: false, error: null })
+      store.updatePanel('whale', { data: { trades: whaleTrades, pair }, isLoading: false, error: null })
     } else {
-      store.updatePanel('whale', { isLoading: false, error: `Data unavailable for ${symbol}` })
+      store.updatePanel('whale', { isLoading: false, error: `No trade data for ${symbol}` })
     }
 
     // On-chain panel
@@ -203,19 +210,37 @@ async function loadPanelData(symbol: string) {
       store.updatePanel('onchain', { isLoading: false, error: coinId ? `Failed to load on-chain data` : `No CoinGecko data for ${symbol}` })
     }
 
-    // Sector panel
+    // Phase C — Sector panel with category fallback
     if (sectorResult.status === 'fulfilled') {
       store.updatePanel('sector', {
         data: { tickers: sectorResult.value, sectorName: sectorInfo?.name, symbols: sectorInfo?.symbols },
         isLoading: false,
         error: null,
       })
+    } else if (!sectorInfo && coinResult.status === 'fulfilled') {
+      // Fallback: use CoinGecko categories
+      const coinData = coinResult.value as { categories?: string[] }
+      const categories = coinData.categories ?? []
+      const meaningfulCategory = categories.find(
+        (c) => c && !c.toLowerCase().includes('ecosystem') && c.toLowerCase() !== 'cryptocurrency'
+      ) || categories[0]
+
+      if (meaningfulCategory) {
+        store.updatePanel('sector', {
+          title: `Sector: ${meaningfulCategory}`,
+          data: { tickers: {}, sectorName: meaningfulCategory, symbols: [], categoryFallback: true },
+          isLoading: false,
+          error: null,
+        })
+      } else {
+        store.updatePanel('sector', { isLoading: false, error: `No sector mapping for ${symbol}` })
+      }
     } else {
       store.updatePanel('sector', { isLoading: false, error: sectorInfo ? 'Failed to load sector data' : `No sector mapping for ${symbol}` })
     }
   } catch {
     // Unexpected error — clear all loading states
-    for (const id of ['chart', 'whale', 'onchain', 'sector']) {
+    for (const id of ['whale', 'onchain', 'sector']) {
       const panel = useInvestigationStore.getState().panels.find((p) => p.id === id)
       if (panel?.isLoading) {
         store.updatePanel(id, { isLoading: false, error: `Data unavailable for ${symbol}` })

@@ -8,7 +8,7 @@ interface TradeData {
 }
 
 interface Props {
-  data: { trades: TradeData[] }
+  data: { trades: TradeData[]; pair?: string }
   symbol: string
 }
 
@@ -25,6 +25,8 @@ function formatTime(ts: number): string {
 
 export default function InvestigationWhale({ data, symbol }: Props) {
   const trades = data?.trades ?? []
+  const pair = data?.pair
+  const isNonUsdt = pair && !pair.endsWith('USDT')
 
   if (trades.length === 0) {
     return (
@@ -36,6 +38,11 @@ export default function InvestigationWhale({ data, symbol }: Props) {
 
   return (
     <div className="overflow-y-auto h-full px-2 py-1">
+      {isNonUsdt && (
+        <div className="text-[10px] font-mono text-amber-400/80 bg-amber-400/10 px-2 py-1 rounded mb-1">
+          Data from {pair} pair
+        </div>
+      )}
       <table className="w-full text-[10px] font-mono">
         <thead>
           <tr className="text-t4 border-b border-white/5">

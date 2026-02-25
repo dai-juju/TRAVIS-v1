@@ -2,8 +2,8 @@ import { ipcMain } from 'electron'
 import { fetchTraditionalAssets } from './yahooFinance'
 import { searchTavily } from './tavily'
 import { fetchCryptoNews, fetchFearGreed } from './feedApi'
-import { fetchKlines, fetchRecentTrades, fetchMultipleTickers } from './binanceApi'
-import { fetchCoinData, symbolToCoinId } from './coingeckoApi'
+import { fetchRecentTrades, fetchMultipleTickers } from './binanceApi'
+import { fetchCoinData, searchCoinId } from './coingeckoApi'
 
 export function registerIpcHandlers() {
   // 기존 non-streaming 핸들러 (fallback)
@@ -139,9 +139,6 @@ export function registerIpcHandlers() {
   ipcMain.handle('feed:feargreed', async () => fetchFearGreed())
 
   // Investigation Mode APIs
-  ipcMain.handle('binance:klines', async (_event, { symbol, interval, limit }) =>
-    fetchKlines(symbol, interval, limit)
-  )
   ipcMain.handle('binance:trades', async (_event, { symbol, limit }) =>
     fetchRecentTrades(symbol, limit)
   )
@@ -150,5 +147,8 @@ export function registerIpcHandlers() {
   )
   ipcMain.handle('coingecko:coin-data', async (_event, { coinId }) =>
     fetchCoinData(coinId)
+  )
+  ipcMain.handle('coingecko:search', async (_event, { symbol }) =>
+    searchCoinId(symbol)
   )
 }

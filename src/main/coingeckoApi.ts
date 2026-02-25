@@ -13,7 +13,10 @@ export interface CoinData {
   priceChange24h: number
   priceChange7d: number
   priceChange30d: number
+  categories?: string[]
 }
+
+const resolvedCache = new Map<string, string | null>()
 
 const SYMBOL_TO_COINGECKO: Record<string, string> = {
   BTC: 'bitcoin',
@@ -44,6 +47,42 @@ export function symbolToCoinId(symbol: string): string | null {
   return SYMBOL_TO_COINGECKO[symbol.toUpperCase()] ?? null
 }
 
+export async function searchCoinId(symbol: string): Promise<string | null> {
+  const upper = symbol.toUpperCase()
+
+  // Fast path: hardcoded map
+  const mapped = SYMBOL_TO_COINGECKO[upper]
+  if (mapped) return mapped
+
+  // Cache check
+  if (resolvedCache.has(upper)) return resolvedCache.get(upper) ?? null
+
+  try {
+    const url = `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(upper)}`
+    const res = await fetch(url, { headers: { 'User-Agent': 'TRAVIS/1.0' } })
+    if (!res.ok) {
+      resolvedCache.set(upper, null)
+      return null
+    }
+
+    const data = (await res.json()) as { coins?: Array<{ id: string; symbol: string; market_cap_rank: number | null }> }
+    const coins = data.coins ?? []
+
+    // Exact symbol match, sorted by market cap rank
+    const matches = coins
+      .filter((c) => c.symbol.toUpperCase() === upper)
+      .sort((a, b) => (a.market_cap_rank ?? 9999) - (b.market_cap_rank ?? 9999))
+
+    const result = matches.length > 0 ? matches[0].id : null
+    resolvedCache.set(upper, result)
+    return result
+  } catch (err) {
+    console.error('[coingeckoApi] search failed:', err)
+    resolvedCache.set(upper, null)
+    return null
+  }
+}
+
 export async function fetchCoinData(coinId: string): Promise<CoinData> {
   try {
     const url = `https://api.coingecko.com/api/v3/coins/${coinId}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`
@@ -60,6 +99,8 @@ export async function fetchCoinData(coinId: string): Promise<CoinData> {
       return 0
     }
 
+    const rawCategories = Array.isArray(data.categories) ? (data.categories as string[]) : []
+
     return {
       name: String(data.name ?? ''),
       symbol: String(data.symbol ?? ''),
@@ -75,6 +116,7 @@ export async function fetchCoinData(coinId: string): Promise<CoinData> {
       priceChange24h: Number(md.price_change_percentage_24h) || 0,
       priceChange7d: Number(md.price_change_percentage_7d) || 0,
       priceChange30d: Number(md.price_change_percentage_30d) || 0,
+      categories: rawCategories,
     }
   } catch (err) {
     console.error('[coingeckoApi] coin data fetch failed:', err)

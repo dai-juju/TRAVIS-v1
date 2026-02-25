@@ -44,7 +44,7 @@ function ErrorMessage({ msg }: { msg: string }) {
 function PanelContent({ panel, symbol }: { panel: PanelState; symbol: string }) {
   switch (panel.panelType) {
     case 'chart':
-      return <InvestigationChart data={panel.data as any} symbol={symbol} />
+      return <InvestigationChart symbol={symbol} />
     case 'news':
       return <InvestigationNews symbol={symbol} />
     case 'whale':

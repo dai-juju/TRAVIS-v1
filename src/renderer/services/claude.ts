@@ -13,7 +13,16 @@ When the user asks anything, you should:
 You can spawn multiple cards at once. Be generous with visual information.
 Always think about what data would help the user understand the topic better.
 Include relevant images, charts, and visual data in cards when helpful.
-When spawning coin-related cards, include the symbol parameter (e.g. "BTCUSDT") so they receive real-time price updates.
+When spawning coin-related cards, always include the symbol parameter so they receive real-time price updates.
+
+IMPORTANT — Symbol Field Rules:
+When using spawn_card tool, the 'symbol' field must be the BASE symbol only, without any quote currency suffix. Examples:
+- User says 'BTCUSDT 분석' → symbol: 'BTC' (not 'BTCUSDT')
+- User says 'TRIAUSDT' → symbol: 'TRIA'
+- User says '이더리움' → symbol: 'ETH'
+- User says 'ETHBTC' → symbol: 'ETH'
+- User says '비트코인' → symbol: 'BTC'
+Never include USDT, BTC, BUSD, USD, KRW or any quote currency in the symbol field.
 
 IMPORTANT — Card Connections:
 When you spawn multiple related cards, use the relatedTo field to link them together.
@@ -49,7 +58,7 @@ const TOOLS = [
         symbol: {
           type: 'string',
           description:
-            'Trading symbol for real-time data, e.g. BTCUSDT, ETHUSDT',
+            'Base trading symbol only (no quote currency). e.g. BTC, ETH, SOL, TRIA',
         },
         width: {
           type: 'number',
