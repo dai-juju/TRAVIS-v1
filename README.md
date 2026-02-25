@@ -31,7 +31,10 @@ AI-powered cryptocurrency market analysis desktop app. Chat naturally with an AI
 - **Design System** — New color palette (void/deep/card), Rajdhani font for headers, CSS variables, updated all components
 - **Tab System** — COMMAND / FEED tabs with instant switching and state preservation (no remount)
 - **Node-Edge Connections** — Hover-reveal SVG edges between related cards, pin/unpin, auto-edge from AI via `relatedTo`
-- **Price Ticker Bar** — Bottom scrolling ticker with real-time crypto prices (BTC, ETH, SOL, BNB, XRP) via Binance WebSocket
+- **Real-Time Price Ticker** — Bottom scrolling ticker with crypto (Binance WebSocket) + traditional assets (S&P 500, NASDAQ, DXY, GOLD, OIL via Yahoo Finance)
+- **3-Panel COMMAND Layout** — News feed placeholder (left) + Canvas (center) + Chat (right)
+- **AI Web Search via Tavily API** — Claude can search the web for current news, events, and data
+- **Real-Time Market Data Injection** — Binance price data auto-injected into AI system prompt when user mentions coin symbols
 
 ### Example
 
@@ -55,9 +58,9 @@ User: "BTC 분석해줘"
 | 2A-1 | Design System Migration | Done |
 | 2A-2 | Tab System (COMMAND / FEED) | Done |
 | 2A-3 | Node-Edge Connections (hover-reveal) | Done |
-| 2A-4 | Price Ticker Bar (real-time crypto) | Done |
-| 2A-5 | Layout Update (3-panel COMMAND) | Next |
-| 2A-6 | AI Data Enhancement (Tavily + real-time context) | Planned |
+| 2A-4 | Price Ticker Bar (crypto + traditional) | Done |
+| 2A-5 | 3-Panel COMMAND Layout | Done |
+| 2A-6 | AI Data Enhancement (Tavily + real-time) | Done |
 
 ## Tech Stack
 
@@ -79,7 +82,7 @@ npm install
 npm run dev
 ```
 
-On first launch, click the gear icon (⚙) in the chat panel header to open Settings and enter your **Claude API Key**. The key is stored locally and only sent to the Anthropic API.
+On first launch, click the gear icon (⚙) in the chat panel header to open Settings and enter your **Claude API Key** and optionally a **Tavily API Key** (for web search). Keys are stored locally and only sent to their respective APIs.
 
 ## Scripts
 

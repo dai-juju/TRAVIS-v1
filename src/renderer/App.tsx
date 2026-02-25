@@ -52,7 +52,22 @@ function App() {
               className="h-full flex"
               style={{ display: activeTab === 'command' ? 'flex' : 'none' }}
             >
+              {/* Left: News Feed placeholder (220px, 2B에서 구현) */}
+              <div className="w-[220px] flex-shrink-0 bg-deep border-r border-white/5 flex flex-col">
+                <div className="h-9 flex items-center px-3 border-b border-white/5">
+                  <span className="text-[11px] font-rajdhani font-bold text-t3 tracking-widest">
+                    ◈ LIVE FEED
+                  </span>
+                </div>
+                <div className="flex-1 flex items-center justify-center">
+                  <span className="text-xs font-mono text-t4">Coming soon</span>
+                </div>
+              </div>
+
+              {/* Center: Canvas */}
               <Canvas />
+
+              {/* Right: Chat */}
               <ChatPanel />
             </div>
 

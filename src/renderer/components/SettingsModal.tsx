@@ -7,10 +7,11 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const { apiKey, contextPrompt, model, setApiKey, setContextPrompt, setModel } =
+  const { apiKey, tavilyApiKey, contextPrompt, model, setApiKey, setTavilyApiKey, setContextPrompt, setModel } =
     useSettingsStore()
 
   const [localKey, setLocalKey] = useState(apiKey)
+  const [localTavilyKey, setLocalTavilyKey] = useState(tavilyApiKey)
   const [localPrompt, setLocalPrompt] = useState(contextPrompt)
   const [localModel, setLocalModel] = useState(model)
 
@@ -18,10 +19,11 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   useEffect(() => {
     if (isOpen) {
       setLocalKey(apiKey)
+      setLocalTavilyKey(tavilyApiKey)
       setLocalPrompt(contextPrompt)
       setLocalModel(model)
     }
-  }, [isOpen, apiKey, contextPrompt, model])
+  }, [isOpen, apiKey, tavilyApiKey, contextPrompt, model])
 
   // ESC로 닫기
   useEffect(() => {
@@ -37,6 +39,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   const handleSave = () => {
     setApiKey(localKey.trim())
+    setTavilyApiKey(localTavilyKey.trim())
     setContextPrompt(localPrompt)
     setModel(localModel)
     onClose()
@@ -74,6 +77,18 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             value={localKey}
             onChange={(e) => setLocalKey(e.target.value)}
             placeholder="sk-ant-..."
+            className="w-full bg-white/5 text-sm text-t1 placeholder-t4 px-3 py-2 rounded-lg border border-white/5 focus:border-purple-500/50 focus:outline-none font-mono"
+          />
+        </div>
+
+        {/* Tavily API Key */}
+        <div className="mb-5">
+          <label className="block text-sm text-t2 mb-1.5">Tavily API Key <span className="text-t4">(web search)</span></label>
+          <input
+            type="password"
+            value={localTavilyKey}
+            onChange={(e) => setLocalTavilyKey(e.target.value)}
+            placeholder="tvly-..."
             className="w-full bg-white/5 text-sm text-t1 placeholder-t4 px-3 py-2 rounded-lg border border-white/5 focus:border-purple-500/50 focus:outline-none font-mono"
           />
         </div>

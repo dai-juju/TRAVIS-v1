@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRealtimeStore } from '../stores/useRealtimeStore'
 import { useCanvasStore } from '../stores/useCanvasStore'
 
@@ -33,10 +33,9 @@ function TickerItem({ symbol, label, price, change, isCrypto }: TickerItemProps)
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!isCrypto) return
 
     const priceStr = price !== null
-      ? `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`
+      ? `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: price < 10 ? 4 : 2 })}`
       : 'Loading...'
     const changeStr = change !== null
       ? (change >= 0 ? '+' : '') + change.toFixed(2) + '%'
@@ -45,9 +44,11 @@ function TickerItem({ symbol, label, price, change, isCrypto }: TickerItemProps)
     addCard({
       type: 'card',
       title: `${label} Price`,
-      content: `**${label}** real-time price tracker.\n\nCurrent: ${priceStr}\n24h Change: ${changeStr}`,
+      content: isCrypto
+        ? `**${label}** real-time price tracker.\n\nCurrent: ${priceStr}\n24h Change: ${changeStr}`
+        : `**${label}** market data.\n\nCurrent: ${priceStr}\nDaily Change: ${changeStr}`,
       cardType: 'price',
-      symbol: symbol,
+      ...(isCrypto ? { symbol } : {}),
       width: 380,
       height: 280,
     })
@@ -90,11 +91,35 @@ export default function PriceTicker() {
   const unsubscribe = useRealtimeStore((s) => s.unsubscribe)
   const tickers = useRealtimeStore((s) => s.tickers)
 
+  // 전통자산 가격 state
+  const [tradFiPrices, setTradFiPrices] = useState<
+    Record<string, { price: number; change: number } | null>
+  >({})
+
+  // 전통자산 가격 fetch
+  const fetchTradFi = useCallback(async () => {
+    try {
+      const api = (window as any).api
+      if (!api?.getTradFiQuotes) return
+      const quotes = await api.getTradFiQuotes()
+      if (quotes) setTradFiPrices(quotes)
+    } catch {
+      // 실패 시 기존 데이터 유지
+    }
+  }, [])
+
   // 크립토 심볼 구독 (BTCUSDT 형식)
   useEffect(() => {
     CRYPTO_TICKERS.forEach(({ symbol }) => subscribe(symbol))
     return () => CRYPTO_TICKERS.forEach(({ symbol }) => unsubscribe(symbol))
   }, [subscribe, unsubscribe])
+
+  // 전통자산 60초 폴링
+  useEffect(() => {
+    fetchTradFi()
+    const interval = setInterval(fetchTradFi, 60_000)
+    return () => clearInterval(interval)
+  }, [fetchTradFi])
 
   // 티커 항목 생성
   const items = [
@@ -108,13 +133,16 @@ export default function PriceTicker() {
         isCrypto: true,
       }
     }),
-    ...TRADITIONAL_ASSETS.map((asset) => ({
-      symbol: asset.symbol,
-      label: asset.label,
-      price: null,
-      change: null,
-      isCrypto: false,
-    })),
+    ...TRADITIONAL_ASSETS.map((asset) => {
+      const q = tradFiPrices[asset.symbol]
+      return {
+        symbol: asset.symbol,
+        label: asset.label,
+        price: q ? q.price : null,
+        change: q ? q.change : null,
+        isCrypto: false,
+      }
+    }),
   ]
 
   return (

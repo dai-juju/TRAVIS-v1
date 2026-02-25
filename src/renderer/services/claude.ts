@@ -21,6 +21,9 @@ Subsequent related cards should include relatedTo: [previousCardId] using that I
 This creates visual connection lines between cards on the canvas, helping users see relationships.
 Always link related cards — for example, if you spawn a BTC analysis card and then a BTC news card, the news card should reference the analysis card's ID.
 
+CRITICAL — Web Search:
+You MUST use the search_web tool when the user asks about recent news, current events, latest updates, or any time-sensitive information. Do NOT answer from memory for these topics — always search first, then answer based on results. You have the search_web tool available. Never say "I cannot search the web" or "I don't have access to current information" — you DO have search access. Use it proactively.
+
 Respond in the same language the user uses.`
 
 // --- Tool Definitions ---
@@ -159,6 +162,21 @@ const TOOLS = [
       required: ['cardId'],
     },
   },
+  {
+    name: 'search_web',
+    description:
+      'Search the web for current information, news, events, or data. Use this when you need up-to-date information that you may not have in your training data.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Search query',
+        },
+      },
+      required: ['query'],
+    },
+  },
 ]
 
 // --- Conversation History (API format, kept separate from display messages) ---
@@ -166,12 +184,17 @@ let conversationHistory: ApiMessage[] = []
 
 function buildSystemPrompt(
   contextPrompt: string,
-  canvasCards: Array<{ id: string; title: string; type: string }>
+  canvasCards: Array<{ id: string; title: string; type: string }>,
+  marketData?: string
 ): string {
   let prompt = BASE_SYSTEM_PROMPT
 
   if (contextPrompt) {
     prompt += `\n\n[USER CONTEXT]\n${contextPrompt}`
+  }
+
+  if (marketData) {
+    prompt += `\n\n[REAL-TIME MARKET DATA]\n${marketData}`
   }
 
   if (canvasCards.length > 0) {
@@ -188,11 +211,12 @@ function buildSystemPrompt(
 
 // --- Tool Execution ---
 let spawnIndex = 0
+let currentTavilyApiKey = ''
 
-function executeTool(
+async function executeTool(
   toolName: string,
   input: Record<string, unknown>
-): string {
+): Promise<string> {
   const store = useCanvasStore.getState()
 
   switch (toolName) {
@@ -269,6 +293,18 @@ function executeTool(
       return JSON.stringify({ status: 'error', message: 'Card not found' })
     }
 
+    case 'search_web': {
+      const query = input.query as string
+      console.log('[TRAVIS] search_web called — query:', query, '| apiKey set:', !!currentTavilyApiKey)
+      const api = (window as any).api
+      if (!api?.searchWeb) {
+        return JSON.stringify({ status: 'error', message: 'Search bridge not available' })
+      }
+      const result = await api.searchWeb(query, currentTavilyApiKey)
+      console.log('[TRAVIS] search_web result length:', typeof result === 'string' ? result.length : 0)
+      return JSON.stringify({ status: 'success', results: result })
+    }
+
     default:
       return JSON.stringify({ status: 'unknown_tool' })
   }
@@ -279,6 +315,7 @@ export interface SendMessageOptions {
   apiKey: string
   model: string
   contextPrompt: string
+  tavilyApiKey: string
   canvasCards: Array<{ id: string; title: string; type: string }>
 }
 
@@ -287,15 +324,55 @@ export interface SendMessageResult {
   toolCalls: ToolCall[]
 }
 
+// 유저 메시지에서 코인 심볼 추출 → Binance REST API로 시세 fetch
+const KNOWN_SYMBOLS = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE', 'ADA', 'DOT', 'AVAX', 'MATIC']
+const SYMBOL_REGEX = new RegExp(`\\b(${KNOWN_SYMBOLS.join('|')})\\b`, 'gi')
+
+async function fetchMarketData(message: string): Promise<string | undefined> {
+  const matches = message.toUpperCase().match(SYMBOL_REGEX)
+  if (!matches) return undefined
+
+  const unique = [...new Set(matches.map((m) => m.toUpperCase()))]
+  const lines: string[] = []
+
+  await Promise.allSettled(
+    unique.map(async (sym) => {
+      try {
+        const res = await fetch(
+          `https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}USDT`
+        )
+        if (!res.ok) return
+        const d = await res.json()
+        const price = parseFloat(d.lastPrice)
+        const change = parseFloat(d.priceChangePercent)
+        const vol = parseFloat(d.volume)
+        lines.push(
+          `${sym}/USDT: $${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: price < 10 ? 4 : 2 })} | 24h: ${change >= 0 ? '+' : ''}${change.toFixed(2)}% | Vol: ${vol.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${sym}`
+        )
+      } catch {
+        // 개별 심볼 실패 무시
+      }
+    })
+  )
+
+  return lines.length > 0 ? lines.join('\n') : undefined
+}
+
 export async function sendMessage(
   userMessage: string,
   options: SendMessageOptions
 ): Promise<SendMessageResult> {
-  const { apiKey, model, contextPrompt, canvasCards } = options
+  const { apiKey, model, contextPrompt, tavilyApiKey, canvasCards } = options
+
+  // Tavily API key를 executeTool에서 사용하도록 저장
+  currentTavilyApiKey = tavilyApiKey
+  console.log('[TRAVIS] sendMessage — tavilyApiKey set:', tavilyApiKey ? 'YES' : 'NO', '| tools count:', TOOLS.length)
 
   conversationHistory.push({ role: 'user', content: userMessage })
 
-  const systemPrompt = buildSystemPrompt(contextPrompt, canvasCards)
+  // 실시간 시세 주입
+  const marketData = await fetchMarketData(userMessage)
+  const systemPrompt = buildSystemPrompt(contextPrompt, canvasCards, marketData)
   const allToolCalls: ToolCall[] = []
   let finalText = ''
 
@@ -355,11 +432,15 @@ export async function sendMessage(
     }
 
     // 도구 실행 + tool_result 전송
-    const toolResults: ApiContentBlock[] = toolUseBlocks.map((block) => ({
-      type: 'tool_result' as const,
-      tool_use_id: block.id,
-      content: executeTool(block.name, block.input),
-    }))
+    const toolResults: ApiContentBlock[] = []
+    for (const block of toolUseBlocks) {
+      const result = await executeTool(block.name, block.input)
+      toolResults.push({
+        type: 'tool_result' as const,
+        tool_use_id: block.id,
+        content: result,
+      })
+    }
     conversationHistory.push({ role: 'user', content: toolResults })
   }
 

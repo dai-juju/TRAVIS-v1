@@ -1,7 +1,7 @@
 # Current Task
 
-## Status: Phase 2A IN PROGRESS 🔨
-**Phase 1 complete. Now building Phase 2A: Foundation Enhancement.**
+## Status: Phase 2A COMPLETE ✅
+**Phase 1 + 2A complete. Next: Phase 2B: Breaking News Feed.**
 
 ---
 
@@ -19,13 +19,13 @@
 
 ## Phase 2: Mosaic Intelligence Platform
 
-### Phase 2A: Foundation Enhancement (CURRENT)
+### Phase 2A: Foundation Enhancement (COMPLETE ✅)
 - [x] **2A-1: Design System Migration** — New color palette, Rajdhani font, CSS variables, all components updated
 - [x] **2A-2: Tab System** — COMMAND / FEED tabs with state preservation
 - [x] **2A-3: Node-Edge Connections** — Hover-reveal SVG edges, pin/unpin, auto-edge from AI
 - [x] **2A-4: Price Ticker Bar** — Bottom scrolling ticker with live crypto + traditional asset prices
-- [ ] **2A-5: Layout Update** — 3-panel COMMAND tab (News placeholder | Canvas | Chat)
-- [ ] **2A-6: AI Data Enhancement** — Tavily web search + real-time market data in system prompt
+- [x] **2A-5: Layout Update** — 3-panel COMMAND tab (News placeholder | Canvas | Chat)
+- [x] **2A-6: AI Data Enhancement** — Tavily web search + real-time market data in system prompt
 
 ### Phase 2B: Breaking News Feed + Free Data Sources (UPCOMING)
 - [ ] **2B-1: Feed Data Service** — CryptoPanic, CMC, CoinGecko, Fear & Greed, exchange announcements
@@ -50,8 +50,8 @@
 ---
 
 ## Current Step
-**2A-4 Complete. Next: Phase 2A-5: Layout Update**
-Read docs/plan.md Phase 2A-5 section for detailed implementation steps.
+**Phase 2A Complete. Next: Phase 2B-1: Feed Data Service**
+Read docs/plan.md Phase 2B section for detailed implementation steps.
 
 ## Known Issues
 (none yet)

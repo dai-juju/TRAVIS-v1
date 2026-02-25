@@ -24,7 +24,7 @@ export default function ChatPanel() {
     const trimmed = input.trim()
     if (!trimmed || isLoading) return
 
-    const { apiKey, model, contextPrompt } = useSettingsStore.getState()
+    const { apiKey, model, contextPrompt, tavilyApiKey } = useSettingsStore.getState()
     if (!apiKey) {
       setSettingsOpen(true)
       return
@@ -49,6 +49,7 @@ export default function ChatPanel() {
         apiKey,
         model,
         contextPrompt,
+        tavilyApiKey,
         canvasCards,
       })
 

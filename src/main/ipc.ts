@@ -1,4 +1,6 @@
 import { ipcMain } from 'electron'
+import { fetchTraditionalAssets } from './yahooFinance'
+import { searchTavily } from './tavily'
 
 export function registerIpcHandlers() {
   ipcMain.handle('claude:chat', async (_event, payload) => {
@@ -26,5 +28,13 @@ export function registerIpcHandlers() {
     }
 
     return response.json()
+  })
+
+  ipcMain.handle('tradfi:quotes', async () => {
+    return fetchTraditionalAssets()
+  })
+
+  ipcMain.handle('tavily:search', async (_event, { query, apiKey }) => {
+    return searchTavily(query, apiKey)
   })
 }
