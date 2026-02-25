@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import { fetchTraditionalAssets } from './yahooFinance'
 import { searchTavily } from './tavily'
+import { fetchCryptoNews, fetchFearGreed } from './feedApi'
 
 export function registerIpcHandlers() {
   ipcMain.handle('claude:chat', async (_event, payload) => {
@@ -37,4 +38,7 @@ export function registerIpcHandlers() {
   ipcMain.handle('tavily:search', async (_event, { query, apiKey }) => {
     return searchTavily(query, apiKey)
   })
+
+  ipcMain.handle('feed:cryptonews', async () => fetchCryptoNews())
+  ipcMain.handle('feed:feargreed', async () => fetchFearGreed())
 }

@@ -1,7 +1,7 @@
 # Current Task
 
-## Status: Phase 2A COMPLETE ✅
-**Phase 1 + 2A complete. Next: Phase 2B: Breaking News Feed.**
+## Status: Phase 2B COMPLETE ✅
+**Phase 1 + 2A + 2B complete. Next: Phase 2C: FEED Tab.**
 
 ---
 
@@ -27,11 +27,11 @@
 - [x] **2A-5: Layout Update** — 3-panel COMMAND tab (News placeholder | Canvas | Chat)
 - [x] **2A-6: AI Data Enhancement** — Tavily web search + real-time market data in system prompt
 
-### Phase 2B: Breaking News Feed + Free Data Sources (UPCOMING)
-- [ ] **2B-1: Feed Data Service** — CryptoPanic, CMC, CoinGecko, Fear & Greed, exchange announcements
-- [ ] **2B-2: Feed Store** — Feed items state management
-- [ ] **2B-3: News Feed UI** — Left panel with live news, drag-to-canvas
-- [ ] **2B-4: AI Relevance Scoring** — AI scores feed items without filtering
+### Phase 2B: Breaking News Feed + Free Data Sources (COMPLETE ✅)
+- [x] **2B-1: Feed Data Service** — CryptoCompare news + Fear & Greed Index, IPC handlers, feedService
+- [x] **2B-2: Feed Store** — useFeedStore with addItems, filters, getFilteredItems
+- [x] **2B-3: News Feed UI** — Left panel with live news, category/importance badges, drag-to-canvas
+- [x] **2B-4: AI Relevance Scoring** — Batch scoring via Haiku, async update, ON/OFF toggle
 
 ### Phase 2C: FEED Tab (UPCOMING)
 - [ ] **2C-1: FEED Tab Layout** — Tab 2 base structure
@@ -50,8 +50,8 @@
 ---
 
 ## Current Step
-**Phase 2A Complete. Next: Phase 2B-1: Feed Data Service**
-Read docs/plan.md Phase 2B section for detailed implementation steps.
+**Phase 2B Complete. Next: Phase 2C-1: FEED Tab Layout**
+Read docs/plan.md Phase 2C section for detailed implementation steps.
 
 ## Known Issues
 (none yet)

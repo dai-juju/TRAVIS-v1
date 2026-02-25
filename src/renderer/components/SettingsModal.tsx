@@ -7,7 +7,7 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const { apiKey, tavilyApiKey, contextPrompt, model, setApiKey, setTavilyApiKey, setContextPrompt, setModel } =
+  const { apiKey, tavilyApiKey, contextPrompt, model, enableAiScoring, setApiKey, setTavilyApiKey, setContextPrompt, setModel, setEnableAiScoring } =
     useSettingsStore()
 
   const [localKey, setLocalKey] = useState(apiKey)
@@ -119,6 +119,29 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <option value="claude-haiku-4-5-20251001">claude-haiku-4-5-20251001</option>
             <option value="claude-opus-4-6">claude-opus-4-6</option>
           </select>
+        </div>
+
+        {/* AI Scoring Toggle */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="block text-sm text-t2">AI Scoring</label>
+              <p className="text-[10px] text-t4 mt-0.5">AI가 뉴스 중요도를 자동 평가합니다 (Haiku 모델 사용)</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEnableAiScoring(!enableAiScoring)}
+              className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${
+                enableAiScoring ? 'bg-purple-500' : 'bg-white/10'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                  enableAiScoring ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
         </div>
 
         {/* Save */}

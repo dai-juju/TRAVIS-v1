@@ -86,3 +86,22 @@ export interface ChatResponse {
   content: ApiContentBlock[]
   stop_reason: string
 }
+
+// --- Feed ---
+export type FeedCategory = 'macro' | 'crypto' | 'onchain' | 'exchange' | 'social' | 'stocks' | 'world'
+export type FeedImportance = 'critical' | 'alert' | 'signal' | 'info'
+
+export interface FeedItem {
+  id: string
+  title: string
+  source: string
+  url: string
+  category: FeedCategory
+  importance: FeedImportance
+  timestamp: number
+  summary?: string
+  location?: string
+  aiImportance?: FeedImportance   // AI가 재평가한 중요도
+  relevanceScore?: number          // 0-100, 유저 컨텍스트 대비 관련성
+  scored?: boolean                 // scoring 완료 여부
+}

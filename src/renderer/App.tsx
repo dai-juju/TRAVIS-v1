@@ -7,11 +7,15 @@ import ChatPanel from './components/ChatPanel'
 import StatusBar from './components/StatusBar'
 import PriceTicker from './components/PriceTicker'
 import InvestigationMode from './components/InvestigationMode'
+import NewsFeed from './components/NewsFeed'
 import { dataSourceManager } from './services/dataSource'
 import { BinanceDataSource } from './services/binanceWs'
+import { feedService } from './services/feedService'
+import { scoringService } from './services/scoringService'
 import { useRealtimeStore } from './stores/useRealtimeStore'
 import { useInvestigationStore } from './stores/useInvestigationStore'
 import { useTabStore } from './stores/useTabStore'
+import { useFeedStore } from './stores/useFeedStore'
 
 function App() {
   const [booting, setBooting] = useState(true)
@@ -33,6 +37,23 @@ function App() {
     return () => dataSourceManager.disconnectAll()
   }, [])
 
+  // Feed service 초기화 (부팅 완료 후)
+  useEffect(() => {
+    if (booting) return
+
+    const unsub = feedService.onUpdate((items) => {
+      useFeedStore.getState().addItems(items)
+      scoringService.enqueue(items)
+    })
+    feedService.startAll()
+
+    return () => {
+      unsub()
+      feedService.stopAll()
+      scoringService.stop()
+    }
+  }, [booting])
+
   return (
     <div className="h-screen w-screen bg-void overflow-hidden flex flex-col">
       {booting ? (
@@ -52,17 +73,8 @@ function App() {
               className="h-full flex"
               style={{ display: activeTab === 'command' ? 'flex' : 'none' }}
             >
-              {/* Left: News Feed placeholder (220px, 2B에서 구현) */}
-              <div className="w-[220px] flex-shrink-0 bg-deep border-r border-white/5 flex flex-col">
-                <div className="h-9 flex items-center px-3 border-b border-white/5">
-                  <span className="text-[11px] font-rajdhani font-bold text-t3 tracking-widest">
-                    ◈ LIVE FEED
-                  </span>
-                </div>
-                <div className="flex-1 flex items-center justify-center">
-                  <span className="text-xs font-mono text-t4">Coming soon</span>
-                </div>
-              </div>
+              {/* Left: News Feed */}
+              <NewsFeed />
 
               {/* Center: Canvas */}
               <Canvas />

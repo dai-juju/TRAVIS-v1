@@ -121,11 +121,11 @@ Phase 2 is split into 4 sub-phases (2A → 2B → 2C → 2D). Complete in order.
 
 ---
 
-## Phase 2B: Breaking News Feed + Free Data Sources
+## Phase 2B: Breaking News Feed + Free Data Sources ✅
 **Goal**: Left panel shows live breaking news from free sources. Drag news to canvas.
 
 ### 2B-1: Feed Data Service
-- [ ] Create src/renderer/services/feedService.ts
+- [x] Create src/renderer/services/feedService.ts
   - FeedSource interface (like DataSource but for news/events)
   - CryptoPanic integration (free tier: crypto news aggregation)
     - API: https://cryptopanic.com/api/v1/posts/?auth_token=FREE
@@ -143,7 +143,7 @@ Phase 2 is split into 4 sub-phases (2A → 2B → 2C → 2D). Complete in order.
   - FeedImportance: 'critical' | 'alert' | 'signal' | 'info'
 
 ### 2B-2: Feed Store
-- [ ] Create src/renderer/stores/useFeedStore.ts
+- [x] Create src/renderer/stores/useFeedStore.ts
   - items: FeedItem[] (sorted by timestamp, newest first)
   - addItem(item) — prepend to list, cap at 200 items
   - filters: { categories: Set, importance: Set }
@@ -151,32 +151,32 @@ Phase 2 is split into 4 sub-phases (2A → 2B → 2C → 2D). Complete in order.
   - Connection status per source
 
 ### 2B-3: News Feed UI (Left Panel)
-- [ ] Create src/renderer/components/NewsFeed.tsx
+- [x] Create src/renderer/components/NewsFeed.tsx
   - Replace left placeholder with live news feed
   - Header: "LIVE FEED" + connection indicator
   - Scrollable list of FeedItem components
   - New items slide in at top with animation
   - Auto-scroll, pause on hover
-- [ ] Create src/renderer/components/FeedItem.tsx
+- [x] Create src/renderer/components/FeedItem.tsx
   - Left edge: category color strip (amber/purple/cyan/red/green/blue/pink)
   - Importance badge: CRITICAL(red bg) / ALERT(yellow) / SIGNAL(purple) / INFO(gray)
   - Title text (importance affects brightness/size)
   - Source + timestamp
   - Click → detail modal with full content
   - **Draggable**: drag item → drop on canvas → creates new card node
-- [ ] Implement drag-to-canvas:
+- [x] Implement drag-to-canvas:
   - onDragStart on FeedItem
   - onDrop on Canvas → useCanvasStore.addCard() from feed item data
   - AI auto-analyzes and suggests edges to existing nodes
-- [ ] Verify: Live news appears, can drag onto canvas, importance levels visible
+- [x] Verify: Live news appears, can drag onto canvas, importance levels visible
 
 ### 2B-4: AI Relevance Scoring
-- [ ] When new feed items arrive, batch-send to Claude for relevance scoring
+- [x] When new feed items arrive, batch-send to Claude for relevance scoring
   - Claude scores 0-100 relevance to user's context prompt
   - Score displayed as subtle bar on each feed item
   - AI does NOT filter — only scores. All items remain visible.
   - Scoring is async (items appear immediately, score fills in later)
-- [ ] Verify: Feed items show relevance scores after brief delay
+- [x] Verify: Feed items show relevance scores after brief delay
 
 **Done when**: Left panel shows live news, drag-to-canvas works, AI scores relevance.
 
