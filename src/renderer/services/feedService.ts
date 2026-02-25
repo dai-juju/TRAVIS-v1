@@ -1,4 +1,5 @@
 import type { FeedItem } from '../types'
+import { extractLocation } from '../utils/geoKeywords'
 
 interface FeedSource {
   name: string
@@ -40,6 +41,7 @@ const cryptoNewsSource: FeedSource = {
         importance: 'signal' as const,
         timestamp: item.timestamp,
         summary: item.body,
+        location: extractLocation(item.title, item.source)?.name,
       }
     })
   },

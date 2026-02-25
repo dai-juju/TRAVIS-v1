@@ -8,6 +8,7 @@ import StatusBar from './components/StatusBar'
 import PriceTicker from './components/PriceTicker'
 import InvestigationMode from './components/InvestigationMode'
 import NewsFeed from './components/NewsFeed'
+import MosaicFeed from './components/MosaicFeed'
 import { dataSourceManager } from './services/dataSource'
 import { BinanceDataSource } from './services/binanceWs'
 import { feedService } from './services/feedService'
@@ -83,19 +84,13 @@ function App() {
               <ChatPanel />
             </div>
 
-            {/* FEED tab — placeholder */}
-            {activeTab === 'feed' && (
-              <div className="h-full flex items-center justify-center">
-                <div className="flex flex-col items-center gap-3">
-                  <span className="text-2xl font-rajdhani font-bold text-t3 tracking-widest">
-                    ◈ FEED
-                  </span>
-                  <span className="text-sm text-t4 font-mono">
-                    Coming soon
-                  </span>
-                </div>
-              </div>
-            )}
+            {/* FEED tab — display toggle로 상태 보존 */}
+            <div
+              className="h-full"
+              style={{ display: activeTab === 'feed' ? 'block' : 'none' }}
+            >
+              <MosaicFeed />
+            </div>
           </motion.div>
 
           <StatusBar />

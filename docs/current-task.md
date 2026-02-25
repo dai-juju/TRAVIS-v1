@@ -1,7 +1,7 @@
 # Current Task
 
-## Status: Phase 2B COMPLETE ✅
-**Phase 1 + 2A + 2B complete. Next: Phase 2C: FEED Tab.**
+## Status: Phase 2C COMPLETE ✅
+**Phase 1 + 2A + 2B + 2C complete. Next: Phase 2D: Advanced Features.**
 
 ---
 
@@ -33,12 +33,12 @@
 - [x] **2B-3: News Feed UI** — Left panel with live news, category/importance badges, drag-to-canvas
 - [x] **2B-4: AI Relevance Scoring** — Batch scoring via Haiku, async update, ON/OFF toggle
 
-### Phase 2C: FEED Tab (UPCOMING)
-- [ ] **2C-1: FEED Tab Layout** — Tab 2 base structure
-- [ ] **2C-2: World Map** — Event pins on dark world map
-- [ ] **2C-3: Feed Sidebar** — Unified feed with filters and search
-- [ ] **2C-4: Multi-Column Raw Feed** — 7 category columns (MACRO/CRYPTO/ON-CHAIN/EXCHANGE/SOCIAL/STOCKS/WORLD)
-- [ ] **2C-5: Event Calendar** — Crypto + macro event calendar
+### Phase 2C: FEED Tab (COMPLETE ✅)
+- [x] **2C-1: FEED Tab Layout** — MosaicFeed with WorldMap/FeedSidebar top + expandable MultiColumnFeed bottom
+- [x] **2C-2: World Map** — Dark world map with geo-tagged news pins, hover tooltips, pulse animation
+- [x] **2C-3: Feed Sidebar** — Unified feed with category/importance filters and search
+- [x] **2C-4: Multi-Column Raw Feed** — 7 category columns (MACRO/CRYPTO/ON-CHAIN/EXCHANGE/SOCIAL/STOCKS/WORLD)
+- [x] **2C-5: Event Calendar** — Monthly calendar with FOMC, CPI, NFP dates + crypto events
 
 ### Phase 2D: Advanced Features (UPCOMING)
 - [ ] **2D-1: Insight Pulse** — Cross-analysis alerts between nodes
@@ -50,8 +50,8 @@
 ---
 
 ## Current Step
-**Phase 2B Complete. Next: Phase 2C-1: FEED Tab Layout**
-Read docs/plan.md Phase 2C section for detailed implementation steps.
+**Phase 2C Complete. Next: Phase 2D-1: Insight Pulse**
+Read docs/plan.md Phase 2D section for detailed implementation steps.
 
 ## Known Issues
 (none yet)

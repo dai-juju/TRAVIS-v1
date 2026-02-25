@@ -182,62 +182,63 @@ Phase 2 is split into 4 sub-phases (2A → 2B → 2C → 2D). Complete in order.
 
 ---
 
-## Phase 2C: FEED Tab (World Map + Multi-Column Feed + Calendar)
+## Phase 2C: FEED Tab (World Map + Multi-Column Feed + Calendar) ✅
 **Goal**: Second tab with world map, 7-column raw feed, and event calendar.
 
-### 2C-1: FEED Tab Layout
-- [ ] Create src/renderer/components/MosaicFeed.tsx
+### 2C-1: FEED Tab Layout ✅
+- [x] Create src/renderer/components/MosaicFeed.tsx
   - Top section: WorldMap (left) + FeedSidebar (right, 300px)
   - Bottom section: expandable multi-column view
   - Drag handle between top/bottom to expand columns view
-- [ ] Update TabBar: clicking "FEED" shows MosaicFeed component
-- [ ] Verify: Tab switching works, basic layout renders
+- [x] Update TabBar: clicking "FEED" shows MosaicFeed component
+- [x] Verify: Tab switching works, basic layout renders
 
-### 2C-2: World Map
-- [ ] Install react-simple-maps (lightweight world map library)
-- [ ] Create src/renderer/components/WorldMap.tsx
+### 2C-2: World Map ✅
+- [x] Install react-simple-maps (lightweight world map library)
+- [x] Create src/renderer/components/WorldMap.tsx
   - Dark theme world map (gray landmass on void background)
   - Event pins at locations from feed items (where location data available)
   - Pin colors: match feed level (critical=red, alert=yellow, signal=purple, info=gray)
   - Ping/pulse animation on new events
   - Hover pin → tooltip (title + time + source)
   - Click pin → detail modal + "Add to COMMAND" button
-- [ ] Verify: Map renders, pins appear for geolocated feed items
+- [x] Create src/renderer/utils/geoKeywords.ts — keyword→coordinate mapping + location extraction
+- [x] Update feedService.ts — auto-tag news items with location
+- [x] Verify: Map renders, pins appear for geolocated feed items
 
-### 2C-3: Feed Sidebar
-- [ ] Create feed sidebar for FEED tab (right, 300px)
+### 2C-3: Feed Sidebar ✅
+- [x] Create feed sidebar for FEED tab (right, 300px)
   - Unified feed (all categories mixed, sorted by time)
   - Filter toggles per category (7 toggles matching 7 columns)
   - Search bar (filter by keyword)
   - Reuse FeedItem component from 2B
   - Click item → modal + "Add to COMMAND" button
-- [ ] Verify: Sidebar shows all feeds, filters work
+- [x] Verify: Sidebar shows all feeds, filters work
 
-### 2C-4: Multi-Column Raw Feed
-- [ ] Create src/renderer/components/FeedColumn.tsx
+### 2C-4: Multi-Column Raw Feed ✅
+- [x] Create src/renderer/components/FeedColumn.tsx
   - Single column: header (category name + color) + scrollable items
   - Each column independently scrolls
   - Items styled by importance level (HIGH/MED/LOW brightness)
-- [ ] Bottom panel of MosaicFeed: **7 columns** side by side
+- [x] Bottom panel of MosaicFeed: **7 columns** side by side
   - MACRO | CRYPTO | ON-CHAIN | EXCHANGE | SOCIAL | STOCKS | WORLD
   - Expandable: drag handle to pull up, slide-up animation
   - Each column receives items from useFeedStore filtered by category
-- [ ] Verify: 7 columns visible, each with relevant category items
+- [x] Verify: 7 columns visible, each with relevant category items
 
-### 2C-5: Event Calendar
-- [ ] Create src/renderer/components/EventCalendar.tsx
+### 2C-5: Event Calendar ✅
+- [x] Create src/renderer/components/EventCalendar.tsx
   - Monthly calendar grid view
   - Events marked on dates with category color dots
-  - Event types: token unlocks, FOMC, CPI, earnings, hard forks
+  - Event types: FOMC, CPI, NFP, crypto events
   - Click date → list of events for that day
-  - Click event → detail modal
-- [ ] Data sources:
-  - CoinMarketCal API (crypto events, free tier)
-  - FOMC/CPI schedule (known dates, hardcoded for current year)
-- [ ] Position: accessible from FEED tab (sidebar tab or separate section)
-- [ ] Verify: Calendar renders, events visible, clickable
+  - [MAP | CALENDAR] mini tabs in MosaicFeed top-left area
+- [x] Data sources:
+  - FOMC/CPI/NFP schedule (hardcoded 2025-2026)
+  - Crypto milestone dates
+- [x] Verify: Calendar renders, events visible, clickable
 
-**Done when**: FEED tab fully functional with map, 7 feed columns, and calendar.
+**Done when**: FEED tab fully functional with map, 7 feed columns, and calendar. ✅
 
 ---
 
