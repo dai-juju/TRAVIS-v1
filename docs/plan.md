@@ -256,25 +256,31 @@ Phase 2 is split into 4 sub-phases (2A → 2B → 2C → 2D). Complete in order.
 - [ ] Triggers: new node added, price significant change, new critical news
 - [ ] Verify: Multi-node pattern detected and displayed
 
-### 2D-2: Enhanced AI Chat
-- [ ] Typing animation (stream response character by character)
-- [ ] Canvas-chat linkage:
-  - AI response highlights related nodes
-  - Click node → sends "Analyze this" to AI with node context
-- [ ] Loading experience: pulsing animation + progress text
-- [ ] AI proactively suggests new nodes when context warrants
-- [ ] Verify: Typing effect works, node click → AI analysis
+### 2D-2: Enhanced AI Chat ✅
+- [x] SSE streaming with typing animation (character-by-character via main process proxy)
+- [x] focusedCard context linkage:
+  - Click card content → activates as chat context (purple border + context bar)
+  - Subsequent messages include [FOCUSED CARD CONTEXT] in system prompt
+  - Click ✕ or empty canvas → clears focus
+- [x] Loading experience: pulsing "Analyzing..." indicator before streaming starts
+- [x] Verify: Streaming works, card click → context bar, messages reference card content
 
-### 2D-3: Investigation Mode Upgrade
-- [ ] AI fills each panel dynamically (not just Overview)
-  - Chart: embed TradingView widget or lightweight-charts
-  - News: live news from feedService filtered by coin
-  - Whale: data from free whale tracking sources
-  - On-chain: basic on-chain metrics
-  - Sector: auto-comparison of same-sector coins
-- [ ] Panel drag-to-reposition within grid
-- [ ] Pop-out button (panel → floating overlay)
-- [ ] Verify: All 6 panels have real dynamic data
+### 2D-3: Investigation Mode Upgrade ✅
+- [x] Binance REST API (klines, trades, multi-ticker) via binanceApi.ts
+- [x] CoinGecko API (coin market data) via coingeckoApi.ts
+- [x] 4 IPC handlers + preload methods for data fetching
+- [x] PanelState extended with panelType, isLoading, error, data fields
+- [x] loadPanelData(): parallel fetch for chart/whale/onchain/sector
+- [x] InvestigationChart: lightweight-charts v5 candlestick chart (dark theme)
+- [x] InvestigationNews: filtered news from useFeedStore by symbol
+- [x] InvestigationWhale: large trades table ($100K+ threshold)
+- [x] InvestigationOnchain: CoinGecko market/price/performance data
+- [x] InvestigationSector: sector comparison table with current coin highlight
+- [x] InvestigationPanel: panelType routing, loading spinner, error display
+- [x] Each panel fails independently (Promise.allSettled)
+- [ ] Panel drag-to-reposition within grid (deferred)
+- [ ] Pop-out button (panel → floating overlay) (deferred)
+- [x] Verify: All 6 panels have real dynamic data
 
 ### 2D-4: Additional Data Sources
 - [ ] Binance Futures WebSocket (wss://fstream.binance.com/ws)

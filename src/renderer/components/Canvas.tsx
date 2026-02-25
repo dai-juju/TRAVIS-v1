@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { useCanvasStore } from '../stores/useCanvasStore'
+import { useChatStore } from '../stores/useChatStore'
 import SpawnAnimation from './SpawnAnimation'
 import Card from './Card'
 import WebviewCard from './WebviewCard'
@@ -37,9 +38,10 @@ export default function Canvas() {
   }, [setViewport])
 
   const handleMouseUp = useCallback(() => {
-    // 빈 캔버스 클릭 (패닝 없이 마우스 떼기) → 핀 해제
+    // 빈 캔버스 클릭 (패닝 없이 마우스 떼기) → 핀 해제 + focusedCard 해제
     if (isPanning.current && !didPan.current) {
       clearPins()
+      useChatStore.getState().clearFocusedCard()
     }
     isPanning.current = false
     didPan.current = false

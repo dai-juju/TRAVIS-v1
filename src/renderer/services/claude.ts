@@ -1,6 +1,7 @@
 import type { ToolCall, ApiMessage, ApiContentBlock, CardData } from '../types'
 import { useCanvasStore } from '../stores/useCanvasStore'
 import { useInvestigationStore } from '../stores/useInvestigationStore'
+import { useChatStore } from '../stores/useChatStore'
 
 // --- System Prompt ---
 const BASE_SYSTEM_PROMPT = `You are TRAVIS, an AI assistant that helps users analyze cryptocurrency markets.
@@ -185,7 +186,8 @@ let conversationHistory: ApiMessage[] = []
 function buildSystemPrompt(
   contextPrompt: string,
   canvasCards: Array<{ id: string; title: string; type: string }>,
-  marketData?: string
+  marketData?: string,
+  focusedCard?: { title: string; content: string }
 ): string {
   let prompt = BASE_SYSTEM_PROMPT
 
@@ -204,6 +206,13 @@ function buildSystemPrompt(
     prompt += `\n\n[CURRENT CANVAS STATE]\n${list}`
   } else {
     prompt += '\n\n[CURRENT CANVAS STATE]\nCanvas is empty.'
+  }
+
+  if (focusedCard) {
+    const truncated = focusedCard.content.length > 2000
+      ? focusedCard.content.slice(0, 2000) + '...'
+      : focusedCard.content
+    prompt += `\n\n[FOCUSED CARD CONTEXT]\nThe user is currently referencing a card titled "${focusedCard.title}". Answer their question in relation to this card's content:\n${truncated}`
   }
 
   return prompt
@@ -310,6 +319,106 @@ async function executeTool(
   }
 }
 
+// --- Streaming ---
+
+interface StreamRoundResult {
+  text: string
+  toolUseBlocks: Array<{ id: string; name: string; input: Record<string, unknown> }>
+  stopReason: string
+  fullContent: ApiContentBlock[]
+}
+
+function streamOneRound(
+  payload: { apiKey: string; model: string; system: string; messages: ApiMessage[]; tools: unknown[] },
+  messageId: string,
+  existingText: string,
+): Promise<StreamRoundResult> {
+  return new Promise((resolve, reject) => {
+    const api = (window as any).api
+    let accumulatedText = ''
+    let stopReason = ''
+
+    // tool_use 블록 추적
+    const toolBlocks: Map<number, { id: string; name: string; jsonStr: string }> = new Map()
+
+    const cleanups: Array<() => void> = []
+
+    function cleanup() {
+      for (const fn of cleanups) fn()
+      cleanups.length = 0
+    }
+
+    let resolved = false
+
+    // text-delta
+    cleanups.push(api.onStreamEvent('stream:text-delta', (data: { text: string }) => {
+      accumulatedText += data.text
+      useChatStore.getState().updateMessage(messageId, existingText + accumulatedText)
+    }))
+
+    // tool-start
+    cleanups.push(api.onStreamEvent('stream:tool-start', (data: { index: number; id: string; name: string }) => {
+      toolBlocks.set(data.index, { id: data.id, name: data.name, jsonStr: '' })
+    }))
+
+    // tool-delta
+    cleanups.push(api.onStreamEvent('stream:tool-delta', (data: { index: number; json: string }) => {
+      const block = toolBlocks.get(data.index)
+      if (block) {
+        block.jsonStr += data.json
+      }
+    }))
+
+    // tool-end (no-op, JSON finalized on message-delta/end)
+    cleanups.push(api.onStreamEvent('stream:tool-end', (_data: { index: number }) => {
+      // tool block finalized
+    }))
+
+    // message-delta
+    cleanups.push(api.onStreamEvent('stream:message-delta', (data: { stopReason: string }) => {
+      stopReason = data.stopReason || ''
+    }))
+
+    // stream:end
+    cleanups.push(api.onStreamEvent('stream:end', () => {
+      if (resolved) return
+      resolved = true
+      cleanup()
+
+      // fullContent 구성
+      const fullContent: ApiContentBlock[] = []
+      if (accumulatedText) {
+        fullContent.push({ type: 'text', text: accumulatedText })
+      }
+
+      const toolUseBlocks: Array<{ id: string; name: string; input: Record<string, unknown> }> = []
+      for (const [, block] of toolBlocks) {
+        let parsedInput: Record<string, unknown> = {}
+        try {
+          parsedInput = JSON.parse(block.jsonStr || '{}')
+        } catch {
+          // 빈 입력
+        }
+        toolUseBlocks.push({ id: block.id, name: block.name, input: parsedInput })
+        fullContent.push({ type: 'tool_use', id: block.id, name: block.name, input: parsedInput })
+      }
+
+      resolve({ text: accumulatedText, toolUseBlocks, stopReason, fullContent })
+    }))
+
+    // stream:error
+    cleanups.push(api.onStreamEvent('stream:error', (data: { error: string }) => {
+      if (resolved) return
+      resolved = true
+      cleanup()
+      reject(new Error(data.error))
+    }))
+
+    // 스트리밍 시작 (fire-and-forget)
+    api.startChatStream(payload)
+  })
+}
+
 // --- Main API ---
 export interface SendMessageOptions {
   apiKey: string
@@ -317,6 +426,7 @@ export interface SendMessageOptions {
   contextPrompt: string
   tavilyApiKey: string
   canvasCards: Array<{ id: string; title: string; type: string }>
+  focusedCard?: { id: string; title: string; content: string }
 }
 
 export interface SendMessageResult {
@@ -362,7 +472,7 @@ export async function sendMessage(
   userMessage: string,
   options: SendMessageOptions
 ): Promise<SendMessageResult> {
-  const { apiKey, model, contextPrompt, tavilyApiKey, canvasCards } = options
+  const { apiKey, model, contextPrompt, tavilyApiKey, canvasCards, focusedCard } = options
 
   // Tavily API key를 executeTool에서 사용하도록 저장
   currentTavilyApiKey = tavilyApiKey
@@ -372,79 +482,74 @@ export async function sendMessage(
 
   // 실시간 시세 주입
   const marketData = await fetchMarketData(userMessage)
-  const systemPrompt = buildSystemPrompt(contextPrompt, canvasCards, marketData)
+  const systemPrompt = buildSystemPrompt(contextPrompt, canvasCards, marketData, focusedCard)
   const allToolCalls: ToolCall[] = []
-  let finalText = ''
 
   // 스폰 인덱스 초기화 (새 메시지마다 cascade delay 리셋)
   spawnIndex = 0
+
+  // 빈 assistant 메시지 생성 → 스트리밍 대상
+  const chatStore = useChatStore.getState()
+  const messageId = chatStore.addMessage('assistant', '')
+  chatStore.setStreamingMessageId(messageId)
+
+  let accumulatedText = ''
 
   // Multi-turn loop (tool_use → tool_result → 반복)
   let turns = 0
   const maxTurns = 10
 
-  while (turns++ < maxTurns) {
-    const response = await window.api.sendChatMessage({
-      apiKey,
-      model,
-      system: systemPrompt,
-      messages: conversationHistory,
-      tools: TOOLS,
-    })
+  try {
+    while (turns++ < maxTurns) {
+      const result = await streamOneRound(
+        { apiKey, model, system: systemPrompt, messages: conversationHistory, tools: TOOLS },
+        messageId,
+        accumulatedText,
+      )
 
-    const content = response.content
-    if (!Array.isArray(content)) {
-      throw new Error('Unexpected API response format')
-    }
+      accumulatedText = accumulatedText + result.text
 
-    // 텍스트와 tool_use 분리
-    const textParts: string[] = []
-    const toolUseBlocks: Array<{
-      type: 'tool_use'
-      id: string
-      name: string
-      input: Record<string, unknown>
-    }> = []
+      // assistant 응답을 히스토리에 추가
+      conversationHistory.push({
+        role: 'assistant',
+        content: result.fullContent,
+      })
 
-    for (const block of content) {
-      if (block.type === 'text') {
-        textParts.push(block.text)
-      } else if (block.type === 'tool_use') {
-        toolUseBlocks.push(block)
-        allToolCalls.push({
-          id: block.id,
-          name: block.name,
-          input: block.input,
+      // tool calls 기록
+      for (const block of result.toolUseBlocks) {
+        allToolCalls.push({ id: block.id, name: block.name, input: block.input })
+      }
+
+      // tool_use가 아니면 완료
+      if (result.stopReason !== 'tool_use' || result.toolUseBlocks.length === 0) {
+        break
+      }
+
+      // 도구 실행 + tool_result 전송
+      const toolResults: ApiContentBlock[] = []
+      for (const block of result.toolUseBlocks) {
+        const toolResult = await executeTool(block.name, block.input)
+        toolResults.push({
+          type: 'tool_result' as const,
+          tool_use_id: block.id,
+          content: toolResult,
         })
       }
-    }
+      conversationHistory.push({ role: 'user', content: toolResults })
 
-    // Assistant 응답을 히스토리에 추가
-    conversationHistory.push({
-      role: 'assistant',
-      content: content as ApiContentBlock[],
-    })
-
-    // tool_use가 없으면 완료
-    if (response.stop_reason !== 'tool_use' || toolUseBlocks.length === 0) {
-      finalText = textParts.join('\n')
-      break
+      // 다음 라운드에서 텍스트가 이어서 추가됨
+      if (accumulatedText) accumulatedText += '\n\n'
     }
-
-    // 도구 실행 + tool_result 전송
-    const toolResults: ApiContentBlock[] = []
-    for (const block of toolUseBlocks) {
-      const result = await executeTool(block.name, block.input)
-      toolResults.push({
-        type: 'tool_result' as const,
-        tool_use_id: block.id,
-        content: result,
-      })
-    }
-    conversationHistory.push({ role: 'user', content: toolResults })
+  } finally {
+    useChatStore.getState().setStreamingMessageId(null)
   }
 
-  return { text: finalText, toolCalls: allToolCalls }
+  // 최종 메시지가 비어있으면 "(도구를 실행했습니다)" 표시
+  if (!accumulatedText.trim()) {
+    useChatStore.getState().updateMessage(messageId, '(도구를 실행했습니다)')
+  }
+
+  return { text: accumulatedText, toolCalls: allToolCalls }
 }
 
 export function clearConversation() {

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useChatStore } from '../stores/useChatStore'
 import { useSettingsStore } from '../stores/useSettingsStore'
 import { useCanvasStore } from '../stores/useCanvasStore'
@@ -7,9 +7,11 @@ import SettingsModal from './SettingsModal'
 
 export default function ChatPanel() {
   const messages = useChatStore((s) => s.messages)
-  const addMessage = useChatStore((s) => s.addMessage)
   const isLoading = useChatStore((s) => s.isLoading)
   const setLoading = useChatStore((s) => s.setLoading)
+  const streamingMessageId = useChatStore((s) => s.streamingMessageId)
+  const focusedCard = useChatStore((s) => s.focusedCard)
+  const clearFocusedCard = useChatStore((s) => s.clearFocusedCard)
   const [input, setInput] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -20,23 +22,16 @@ export default function ChatPanel() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading])
 
-  const handleSend = async () => {
-    const trimmed = input.trim()
-    if (!trimmed || isLoading) return
-
+  const handleSendWithMessage = useCallback(async (msg: string) => {
     const { apiKey, model, contextPrompt, tavilyApiKey } = useSettingsStore.getState()
     if (!apiKey) {
       setSettingsOpen(true)
       return
     }
 
-    addMessage('user', trimmed)
-    setInput('')
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
-    }
-
+    useChatStore.getState().addMessage('user', msg)
     setLoading(true)
+
     try {
       const cards = useCanvasStore.getState().cards
       const canvasCards = cards.map((c) => ({
@@ -45,22 +40,34 @@ export default function ChatPanel() {
         type: c.type,
       }))
 
-      const result = await sendMessage(trimmed, {
+      // sendMessage 내부에서 assistant 메시지 생성 + 스트리밍 업데이트 처리
+      await sendMessage(msg, {
         apiKey,
         model,
         contextPrompt,
         tavilyApiKey,
         canvasCards,
+        focusedCard: useChatStore.getState().focusedCard ?? undefined,
       })
-
-      addMessage('assistant', result.text || '(도구를 실행했습니다)')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '알 수 없는 오류'
-      addMessage('assistant', `오류: ${message}`)
+      useChatStore.getState().addMessage('assistant', `오류: ${message}`)
     } finally {
       setLoading(false)
     }
-  }
+  }, [setLoading])
+
+  const handleSend = useCallback(async () => {
+    const trimmed = input.trim()
+    if (!trimmed || isLoading) return
+
+    setInput('')
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+    }
+
+    await handleSendWithMessage(trimmed)
+  }, [input, isLoading, handleSendWithMessage])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -115,18 +122,19 @@ export default function ChatPanel() {
                 }`}
               >
                 {msg.content}
+                {msg.id === streamingMessageId && (
+                  <span className="streaming-cursor">▌</span>
+                )}
               </div>
             </div>
           ))}
-          {/* 로딩 인디케이터 */}
-          {isLoading && (
+          {/* Analyzing 인디케이터 (스트리밍 시작 전) */}
+          {isLoading && !streamingMessageId && (
             <div className="flex justify-start">
-              <div className="px-3 py-2.5 rounded-lg bg-white/5 rounded-bl-sm">
-                <div className="flex gap-1 items-center">
-                  <span className="typing-dot w-1.5 h-1.5 rounded-full bg-purple-400" style={{ animationDelay: '0s' }} />
-                  <span className="typing-dot w-1.5 h-1.5 rounded-full bg-purple-400" style={{ animationDelay: '0.2s' }} />
-                  <span className="typing-dot w-1.5 h-1.5 rounded-full bg-purple-400" style={{ animationDelay: '0.4s' }} />
-                </div>
+              <div className="px-3 py-2 rounded-lg bg-white/5 rounded-bl-sm">
+                <span className="text-xs font-mono text-purple-400 analyzing-pulse">
+                  Analyzing...
+                </span>
               </div>
             </div>
           )}
@@ -135,6 +143,24 @@ export default function ChatPanel() {
 
         {/* Input */}
         <div className="px-3 py-3 border-t border-white/5">
+          {focusedCard && (
+            <div className="flex items-center justify-between bg-purple-500/10 border border-purple-500/30 rounded-lg px-3 py-1.5 mb-2">
+              <span className="text-xs font-mono text-purple-300 truncate mr-2">
+                {focusedCard.title.length > 30
+                  ? focusedCard.title.slice(0, 30) + '...'
+                  : focusedCard.title}
+                {' '}참조 중
+              </span>
+              <button
+                onClick={clearFocusedCard}
+                className="text-purple-400 hover:text-purple-200 transition-colors flex-shrink-0"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
           <div className="flex items-end gap-2">
             <textarea
               ref={textareaRef}

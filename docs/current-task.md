@@ -1,7 +1,7 @@
 # Current Task
 
-## Status: Phase 2C COMPLETE ✅
-**Phase 1 + 2A + 2B + 2C complete. Next: Phase 2D: Advanced Features.**
+## Status: Phase 2D-3 COMPLETE ✅
+**Phase 1 + 2A + 2B + 2C + 2D-2 + 2D-3 complete. Next: Phase 2D-1 or 2D-4.**
 
 ---
 
@@ -40,17 +40,17 @@
 - [x] **2C-4: Multi-Column Raw Feed** — 7 category columns (MACRO/CRYPTO/ON-CHAIN/EXCHANGE/SOCIAL/STOCKS/WORLD)
 - [x] **2C-5: Event Calendar** — Monthly calendar with FOMC, CPI, NFP dates + crypto events
 
-### Phase 2D: Advanced Features (UPCOMING)
+### Phase 2D: Advanced Features (IN PROGRESS)
 - [ ] **2D-1: Insight Pulse** — Cross-analysis alerts between nodes
-- [ ] **2D-2: Enhanced AI Chat** — Typing animation, canvas-chat linkage
-- [ ] **2D-3: Investigation Mode Upgrade** — AI-filled panels, drag reposition, pop-out
+- [x] **2D-2: Enhanced AI Chat** — SSE streaming + typing animation + focusedCard context linkage
+- [x] **2D-3: Investigation Mode Upgrade** — Dynamic panels with real data (Chart/News/Whale/On-chain/Sector)
 - [ ] **2D-4: Additional Data Sources** — Binance Futures, Upbit, Bybit, CoinGecko expanded
 - [ ] **2D-5: Webview Content Recognition** — Capture webview content, auto-create edges
 
 ---
 
 ## Current Step
-**Phase 2C Complete. Next: Phase 2D-1: Insight Pulse**
+**Phase 2D-3 Complete. Next: Phase 2D-1 or 2D-4**
 Read docs/plan.md Phase 2D section for detailed implementation steps.
 
 ## Known Issues

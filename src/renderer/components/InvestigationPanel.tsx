@@ -2,6 +2,11 @@ import { motion } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useInvestigationStore, type PanelState } from '../stores/useInvestigationStore'
+import InvestigationChart from './InvestigationChart'
+import InvestigationNews from './InvestigationNews'
+import InvestigationWhale from './InvestigationWhale'
+import InvestigationOnchain from './InvestigationOnchain'
+import InvestigationSector from './InvestigationSector'
 
 interface InvestigationPanelProps {
   panel: PanelState
@@ -15,9 +20,53 @@ const TAG_COLORS: Record<string, { bg: string; text: string }> = {
   LOCAL: { bg: 'rgba(107,114,128,0.15)', text: '#94a3b8' },
 }
 
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center h-full gap-2">
+      <div className="w-4 h-4 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+      <span className="text-xs font-mono text-t4">Loading...</span>
+    </div>
+  )
+}
+
+function ErrorMessage({ msg }: { msg: string }) {
+  return (
+    <div className="flex items-center justify-center h-full px-4">
+      <div className="text-center">
+        <div className="text-red-400 text-xs font-mono mb-1">Error</div>
+        <div className="text-t4 text-[10px] font-mono">{msg}</div>
+      </div>
+    </div>
+  )
+}
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function PanelContent({ panel, symbol }: { panel: PanelState; symbol: string }) {
+  switch (panel.panelType) {
+    case 'chart':
+      return <InvestigationChart data={panel.data as any} symbol={symbol} />
+    case 'news':
+      return <InvestigationNews symbol={symbol} />
+    case 'whale':
+      return <InvestigationWhale data={panel.data as any} symbol={symbol} />
+    case 'onchain':
+      return <InvestigationOnchain data={panel.data as any} />
+    case 'sector':
+      return <InvestigationSector data={panel.data as any} symbol={symbol} />
+    case 'markdown':
+    default:
+      return (
+        <div className="overflow-y-auto h-full px-3 py-2 card-markdown text-sm text-t2">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{panel.content}</ReactMarkdown>
+        </div>
+      )
+  }
+}
+
 export default function InvestigationPanel({ panel, index, isMain }: InvestigationPanelProps) {
   const toggleMaximize = useInvestigationStore((s) => s.toggleMaximize)
   const toggleFold = useInvestigationStore((s) => s.toggleFold)
+  const targetSymbol = useInvestigationStore((s) => s.targetCard?.symbol?.toUpperCase() ?? '')
 
   const tagStyle = TAG_COLORS[panel.tag] || TAG_COLORS.LOCAL
 
@@ -82,8 +131,14 @@ export default function InvestigationPanel({ panel, index, isMain }: Investigati
 
       {/* Body */}
       {!panel.isFolded && (
-        <div className="flex-1 overflow-y-auto px-3 py-2 card-markdown text-sm text-t2 min-h-0">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{panel.content}</ReactMarkdown>
+        <div className="flex-1 min-h-0 overflow-hidden">
+          {panel.isLoading ? (
+            <LoadingSpinner />
+          ) : panel.error ? (
+            <ErrorMessage msg={panel.error} />
+          ) : (
+            <PanelContent panel={panel} symbol={targetSymbol} />
+          )}
         </div>
       )}
     </motion.div>

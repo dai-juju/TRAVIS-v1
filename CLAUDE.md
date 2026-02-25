@@ -74,8 +74,8 @@ src/
     components/
       BootSequence.tsx     → App startup cinematic animation
       Canvas.tsx           → Infinite canvas where cards/nodes live
-      ChatPanel.tsx        → Right-side AI chat panel
-      Card.tsx             → Single info card (AI-generated content)
+      ChatPanel.tsx        → Right-side AI chat panel (focusedCard context bar)
+      Card.tsx             → Single info card (click content to activate as chat context)
       WebviewCard.tsx      → Embedded website card
       InvestigationMode.tsx → Full-screen 6-panel analysis grid
       InvestigationPanel.tsx → Single panel in Investigation Mode

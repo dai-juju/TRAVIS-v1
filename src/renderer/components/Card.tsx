@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm'
 import { useCanvasStore } from '../stores/useCanvasStore'
 import { useRealtimeStore } from '../stores/useRealtimeStore'
 import { useInvestigationStore } from '../stores/useInvestigationStore'
+import { useChatStore } from '../stores/useChatStore'
 import LatencyIndicator from './LatencyIndicator'
 import type { CardData } from '../types'
 
@@ -130,11 +131,13 @@ export default function Card({ card }: CardProps) {
     togglePinNode(card.id)
   }, [card.id, togglePinNode])
 
+  const focusedCardId = useChatStore((s) => s.focusedCard?.id)
+  const isFocused = focusedCardId === card.id
   const accentColor = getAccentColor(card.cardType)
 
   return (
     <div
-      className="h-full flex flex-col rounded-lg overflow-hidden border border-white/5 bg-card shadow-xl"
+      className={`h-full flex flex-col rounded-lg overflow-hidden border bg-card shadow-xl ${isFocused ? 'border-purple-500/50' : 'border-white/5'}`}
       style={{ minWidth: 240 }}
       onMouseEnter={() => setHoveredNode(card.id)}
       onMouseLeave={() => setHoveredNode(null)}
@@ -201,7 +204,12 @@ export default function Card({ card }: CardProps) {
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-3 py-2 card-markdown text-sm text-t2">
+      <div
+        className="flex-1 overflow-y-auto px-3 py-2 card-markdown text-sm text-t2 cursor-pointer"
+        onClick={() => useChatStore.getState().setFocusedCard({
+          id: card.id, title: card.title, content: card.content
+        })}
+      >
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{card.content}</ReactMarkdown>
 
         {card.images && card.images.length > 0 && (

@@ -178,6 +178,17 @@ Each card on canvas has:
 - Scan line animation, staggered entrance
 - ESC or X to close
 
+### 8.1 Dynamic Panel Data (Phase 2D-3)
+- **Overview**: Real-time price ticker + card content (markdown)
+- **Chart**: Candlestick chart (lightweight-charts v5, 1H interval from Binance REST klines)
+- **News**: Feed items filtered by coin symbol/name from useFeedStore
+- **Whale Activity**: Large trades from Binance REST (>$100K quoteQty threshold)
+- **On-chain Data**: CoinGecko market data — market cap, supply, ATH/ATL, 24h/7d/30d performance
+- **Sector Compare**: Same-sector coins comparison table (Binance 24hr tickers)
+- Each panel loads independently; failures don't affect other panels
+- Loading states: spinner per panel; error states: red error message per panel
+- Symbol → CoinGecko ID mapping (22 coins) and sector mapping (6 sectors)
+
 ## 9. Canvas
 - Infinite pan/zoom, dark background with grid
 - Smart card placement
@@ -387,9 +398,11 @@ Edge: {
 
 ## 17. Enhanced AI Chat (Phase 2)
 
-### 17.1 Canvas-Chat Linkage
-- When AI responds, related nodes on canvas highlight briefly
-- User can click existing nodes → "Analyze this" sent to AI with node context
+### 17.1 Canvas-Chat Linkage (focusedCard Context)
+- Click card content → activates card as chat context (purple border + context bar in chat)
+- Subsequent user messages reference the focused card's content via [FOCUSED CARD CONTEXT] in system prompt
+- Click ✕ on context bar or empty canvas → clears focused card
+- Clicking a different card switches focus automatically
 - AI can proactively suggest new nodes based on conversation context
 
 ### 17.2 Typing Animation

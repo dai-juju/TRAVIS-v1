@@ -240,3 +240,22 @@
 .map-pin-pulse {
   animation: map-pin-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
+
+/* Streaming cursor blink */
+@keyframes cursor-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+.streaming-cursor {
+  animation: cursor-blink 0.8s step-end infinite;
+  color: var(--pb);
+}
+
+/* Analyzing pulse */
+@keyframes analyzing-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+.analyzing-pulse {
+  animation: analyzing-pulse 1.5s ease-in-out infinite;
+}
