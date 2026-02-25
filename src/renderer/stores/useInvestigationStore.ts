@@ -247,6 +247,41 @@ async function loadPanelData(symbol: string) {
       }
     }
   }
+
+  // Phase D — Futures data (append to overview, graceful skip on failure)
+  try {
+    const [fundingResult, oiResult] = await Promise.allSettled([
+      withTimeout(api.fetchFundingRate(symbol) as Promise<{ symbol: string; markPrice: number; lastFundingRate: number; nextFundingTime: number }>, TIMEOUT),
+      withTimeout(api.fetchOpenInterest(symbol) as Promise<{ symbol: string; openInterest: number }>, TIMEOUT),
+    ])
+
+    let derivSection = ''
+    if (fundingResult.status === 'fulfilled' || oiResult.status === 'fulfilled') {
+      derivSection = '\n\n---\n\n### Derivatives\n\n'
+      if (fundingResult.status === 'fulfilled') {
+        const f = fundingResult.value
+        const ratePercent = (f.lastFundingRate * 100).toFixed(4)
+        const nextTime = new Date(f.nextFundingTime).toLocaleTimeString()
+        derivSection += `**Funding Rate**: ${ratePercent}%\n\n`
+        derivSection += `**Mark Price**: $${f.markPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}\n\n`
+        derivSection += `**Next Funding**: ${nextTime}\n\n`
+      }
+      if (oiResult.status === 'fulfilled') {
+        const oi = oiResult.value
+        derivSection += `**Open Interest**: ${oi.openInterest.toLocaleString()} ${symbol}\n\n`
+      }
+    }
+
+    if (derivSection) {
+      const currentStore = useInvestigationStore.getState()
+      const overviewPanel = currentStore.panels.find((p) => p.id === 'overview')
+      if (overviewPanel) {
+        currentStore.updatePanel('overview', { content: overviewPanel.content + derivSection })
+      }
+    }
+  } catch {
+    // Futures data unavailable — skip silently
+  }
 }
 
 export const useInvestigationStore = create<InvestigationState>((set) => ({

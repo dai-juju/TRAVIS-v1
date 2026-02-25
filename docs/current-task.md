@@ -1,7 +1,7 @@
 # Current Task
 
-## Status: Phase 2D-3 COMPLETE ✅
-**Phase 1 + 2A + 2B + 2C + 2D-2 + 2D-3 complete. Next: Phase 2D-1 or 2D-4.**
+## Status: Phase 2 COMPLETE ✅
+**All Phase 1 + Phase 2 (2A–2D) complete. 2D-1 Insight Pulse skipped.**
 
 ---
 
@@ -17,9 +17,9 @@
 
 ---
 
-## Phase 2: Mosaic Intelligence Platform
+## Phase 2: Mosaic Intelligence Platform (COMPLETE ✅)
 
-### Phase 2A: Foundation Enhancement (COMPLETE ✅)
+### Phase 2A: Foundation Enhancement ✅
 - [x] **2A-1: Design System Migration** — New color palette, Rajdhani font, CSS variables, all components updated
 - [x] **2A-2: Tab System** — COMMAND / FEED tabs with state preservation
 - [x] **2A-3: Node-Edge Connections** — Hover-reveal SVG edges, pin/unpin, auto-edge from AI
@@ -27,31 +27,30 @@
 - [x] **2A-5: Layout Update** — 3-panel COMMAND tab (News placeholder | Canvas | Chat)
 - [x] **2A-6: AI Data Enhancement** — Tavily web search + real-time market data in system prompt
 
-### Phase 2B: Breaking News Feed + Free Data Sources (COMPLETE ✅)
+### Phase 2B: Breaking News Feed ✅
 - [x] **2B-1: Feed Data Service** — CryptoCompare news + Fear & Greed Index, IPC handlers, feedService
 - [x] **2B-2: Feed Store** — useFeedStore with addItems, filters, getFilteredItems
 - [x] **2B-3: News Feed UI** — Left panel with live news, category/importance badges, drag-to-canvas
 - [x] **2B-4: AI Relevance Scoring** — Batch scoring via Haiku, async update, ON/OFF toggle
 
-### Phase 2C: FEED Tab (COMPLETE ✅)
+### Phase 2C: FEED Tab ✅
 - [x] **2C-1: FEED Tab Layout** — MosaicFeed with WorldMap/FeedSidebar top + expandable MultiColumnFeed bottom
 - [x] **2C-2: World Map** — Dark world map with geo-tagged news pins, hover tooltips, pulse animation
 - [x] **2C-3: Feed Sidebar** — Unified feed with category/importance filters and search
 - [x] **2C-4: Multi-Column Raw Feed** — 7 category columns (MACRO/CRYPTO/ON-CHAIN/EXCHANGE/SOCIAL/STOCKS/WORLD)
 - [x] **2C-5: Event Calendar** — Monthly calendar with FOMC, CPI, NFP dates + crypto events
 
-### Phase 2D: Advanced Features (IN PROGRESS)
-- [ ] **2D-1: Insight Pulse** — Cross-analysis alerts between nodes
+### Phase 2D: Advanced Features ✅
+- [~] **2D-1: Insight Pulse** — Skipped
 - [x] **2D-2: Enhanced AI Chat** — SSE streaming + typing animation + focusedCard context linkage
 - [x] **2D-3: Investigation Mode Upgrade** — Dynamic panels with real data (Chart/News/Whale/On-chain/Sector)
-- [ ] **2D-4: Additional Data Sources** — Binance Futures, Upbit, Bybit, CoinGecko expanded
-- [ ] **2D-5: Webview Content Recognition** — Capture webview content, auto-create edges
+- [x] **2D-4: Additional Data Sources** — Binance Futures (funding/OI), Upbit Kimchi Premium, Investigation derivatives
+- [x] **2D-5: Webview Content Recognition** — Live title/URL capture, auto-edges, [OPEN WEBVIEWS] AI context
 
 ---
 
-## Current Step
-**Phase 2D-3 Complete. Next: Phase 2D-1 or 2D-4**
-Read docs/plan.md Phase 2D section for detailed implementation steps.
+## Next
+Phase 3 planning (if applicable).
 
 ## Known Issues
-(none yet)
+(none)

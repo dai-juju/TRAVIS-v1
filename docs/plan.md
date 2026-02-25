@@ -242,10 +242,10 @@ Phase 2 is split into 4 sub-phases (2A → 2B → 2C → 2D). Complete in order.
 
 ---
 
-## Phase 2D: Advanced Features
+## Phase 2D: Advanced Features ✅
 **Goal**: Insight Pulse, enhanced AI, Investigation Mode upgrade, more data sources.
 
-### 2D-1: Insight Pulse (Cross-Analysis Alerts)
+### 2D-1: Insight Pulse (Cross-Analysis Alerts) — SKIPPED
 - [ ] AI automatically analyzes relationships between canvas nodes
 - [ ] When pattern detected: glowing 💡 chip appears on relevant nodes
 - [ ] Click chip → popup with:
@@ -282,26 +282,23 @@ Phase 2 is split into 4 sub-phases (2A → 2B → 2C → 2D). Complete in order.
 - [ ] Pop-out button (panel → floating overlay) (deferred)
 - [x] Verify: All 6 panels have real dynamic data
 
-### 2D-4: Additional Data Sources
-- [ ] Binance Futures WebSocket (wss://fstream.binance.com/ws)
-  - Funding rate, open interest
-  - New DataSource implementation: BinanceFuturesSource
-- [ ] Additional exchanges (as DataSource implementations):
-  - Upbit WebSocket
-  - Bybit WebSocket
-- [ ] Additional free APIs:
-  - CoinGecko (expanded usage)
-  - Whale Alert (free tier)
-  - GDELT (global events)
-- [ ] Verify: Multiple data sources active, Investigation panels populated
+### 2D-4: Additional Data Sources ✅
+- [x] Binance Futures REST API (funding rate, open interest)
+- [x] Upbit Kimchi Premium (BTC/ETH/XRP/SOL/DOGE/ADA)
+- [x] IPC handlers + preload methods for new data sources
+- [x] Investigation Mode: Derivatives section in overview panel
+- [x] PriceTicker: KimchiIndicator between crypto and TradFi items
+- [x] Verify: Futures data in Investigation, KimPre in ticker
 
-### 2D-5: Webview Content Recognition
-- [ ] Capture webview screen content (title, meta, or screenshot)
-- [ ] Send webview context to Claude for relationship analysis
-- [ ] Auto-create edges between webview and related canvas nodes
-- [ ] Update edges when user navigates to different page within webview
+### 2D-5: Webview Content Recognition ✅
+- [x] Capture webview metadata (title, URL) via did-stop-loading/did-navigate-in-page/page-title-updated
+- [x] WebviewData extended with liveTitle/liveUrl
+- [x] updateWebviewMeta() in useCanvasStore
+- [x] Auto-create speculative edges between webview and related canvas nodes
+- [x] [OPEN WEBVIEWS] section in Claude system prompt
+- [x] ChatPanel passes liveTitle/liveUrl to sendMessage
 
-**Done when**: Insight Pulse works, AI chat enhanced, Investigation panels filled, multiple data sources, webview content recognized.
+**Done when**: ~~Insight Pulse works~~(skipped), AI chat enhanced ✅, Investigation panels filled ✅, multiple data sources ✅, webview content recognized ✅.
 
 ---
 

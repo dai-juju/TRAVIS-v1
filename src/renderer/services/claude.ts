@@ -194,7 +194,7 @@ let conversationHistory: ApiMessage[] = []
 
 function buildSystemPrompt(
   contextPrompt: string,
-  canvasCards: Array<{ id: string; title: string; type: string }>,
+  canvasCards: Array<{ id: string; title: string; type: string; liveTitle?: string; liveUrl?: string }>,
   marketData?: string,
   focusedCard?: { title: string; content: string }
 ): string {
@@ -215,6 +215,16 @@ function buildSystemPrompt(
     prompt += `\n\n[CURRENT CANVAS STATE]\n${list}`
   } else {
     prompt += '\n\n[CURRENT CANVAS STATE]\nCanvas is empty.'
+  }
+
+  // [OPEN WEBVIEWS] — live webview metadata for AI context
+  const webviews = canvasCards.filter(
+    (c) => c.type === 'webview' && (c.liveTitle || c.liveUrl)
+  )
+  if (webviews.length > 0) {
+    prompt += `\n\n[OPEN WEBVIEWS]\n` + webviews.map((wv) =>
+      `- "${wv.liveTitle || wv.title}" — ${wv.liveUrl || ''} (id: ${wv.id})`
+    ).join('\n')
   }
 
   if (focusedCard) {
@@ -434,7 +444,7 @@ export interface SendMessageOptions {
   model: string
   contextPrompt: string
   tavilyApiKey: string
-  canvasCards: Array<{ id: string; title: string; type: string }>
+  canvasCards: Array<{ id: string; title: string; type: string; liveTitle?: string; liveUrl?: string }>
   focusedCard?: { id: string; title: string; content: string }
 }
 

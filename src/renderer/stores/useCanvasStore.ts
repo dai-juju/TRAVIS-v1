@@ -23,6 +23,7 @@ interface CanvasState {
   updateCardPosition: (id: string, x: number, y: number) => void
   updateCardSize: (id: string, width: number, height: number) => void
   updateCardContent: (id: string, content: string) => void
+  updateWebviewMeta: (id: string, liveTitle: string, liveUrl: string) => void
   rearrangeCards: (layout: 'grid' | 'stack') => void
   addEdge: (from: string, to: string, strength: EdgeStrength, label?: string) => void
   removeEdge: (id: string) => void
@@ -145,6 +146,13 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     set((state) => ({
       cards: state.cards.map((c) =>
         c.id === id && c.type === 'card' ? { ...c, content } : c
+      ),
+    })),
+
+  updateWebviewMeta: (id, liveTitle, liveUrl) =>
+    set((state) => ({
+      cards: state.cards.map((c) =>
+        c.id === id && c.type === 'webview' ? { ...c, liveTitle, liveUrl } : c
       ),
     })),
 

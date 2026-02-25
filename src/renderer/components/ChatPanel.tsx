@@ -38,6 +38,10 @@ export default function ChatPanel() {
         id: c.id,
         title: c.title,
         type: c.type,
+        ...(c.type === 'webview' ? {
+          liveTitle: (c as import('../types').WebviewData).liveTitle,
+          liveUrl: (c as import('../types').WebviewData).liveUrl,
+        } : {}),
       }))
 
       // sendMessage 내부에서 assistant 메시지 생성 + 스트리밍 업데이트 처리

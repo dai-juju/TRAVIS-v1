@@ -30,6 +30,8 @@ export interface WebviewData {
   y: number
   width: number
   height: number
+  liveTitle?: string   // webview.getTitle()
+  liveUrl?: string     // webview.getURL()
 }
 
 export type CanvasItem = CardData | WebviewData

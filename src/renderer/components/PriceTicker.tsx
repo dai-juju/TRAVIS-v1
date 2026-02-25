@@ -86,6 +86,29 @@ function TickerItem({ symbol, label, price, change, isCrypto }: TickerItemProps)
   )
 }
 
+interface KimchiData {
+  symbol: string
+  premiumPercent: number
+}
+
+function KimchiIndicator({ data }: { data: KimchiData[] }) {
+  if (data.length === 0) return null
+  // Show BTC premium as the representative value
+  const btcData = data.find((d) => d.symbol === 'BTC') ?? data[0]
+  const pct = btcData.premiumPercent
+  const color = pct >= 3 ? '#ef4444' : pct >= 1 ? '#f59e0b' : '#22c55e'
+
+  return (
+    <div className="flex items-center gap-1.5 px-3 whitespace-nowrap">
+      <span className="text-[10px] font-rajdhani font-bold text-t3 tracking-wide">KimPre</span>
+      <span className="text-[11px] font-mono font-semibold" style={{ color }}>
+        {pct >= 0 ? '+' : ''}{pct.toFixed(2)}%
+      </span>
+      <span className="text-t4 text-[10px] ml-1">│</span>
+    </div>
+  )
+}
+
 export default function PriceTicker() {
   const subscribe = useRealtimeStore((s) => s.subscribe)
   const unsubscribe = useRealtimeStore((s) => s.unsubscribe)
@@ -95,6 +118,9 @@ export default function PriceTicker() {
   const [tradFiPrices, setTradFiPrices] = useState<
     Record<string, { price: number; change: number } | null>
   >({})
+
+  // 김프 데이터
+  const [kimchiData, setKimchiData] = useState<KimchiData[]>([])
 
   // 전통자산 가격 fetch
   const fetchTradFi = useCallback(async () => {
@@ -121,29 +147,49 @@ export default function PriceTicker() {
     return () => clearInterval(interval)
   }, [fetchTradFi])
 
+  // 김프 60초 폴링
+  const fetchKimchi = useCallback(async () => {
+    try {
+      const api = (window as any).api
+      if (!api?.fetchKimchiPremium) return
+      const result = await api.fetchKimchiPremium(['BTC', 'ETH', 'XRP', 'SOL', 'DOGE', 'ADA'])
+      if (result) {
+        const entries = Object.values(result) as KimchiData[]
+        setKimchiData(entries)
+      }
+    } catch {
+      // 실패 시 기존 데이터 유지
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchKimchi()
+    const interval = setInterval(fetchKimchi, 60_000)
+    return () => clearInterval(interval)
+  }, [fetchKimchi])
+
   // 티커 항목 생성
-  const items = [
-    ...CRYPTO_TICKERS.map(({ symbol, label }) => {
-      const t = tickers[symbol]
-      return {
-        symbol,
-        label,
-        price: t ? t.price : null,
-        change: t ? t.change24h : null,
-        isCrypto: true,
-      }
-    }),
-    ...TRADITIONAL_ASSETS.map((asset) => {
-      const q = tradFiPrices[asset.symbol]
-      return {
-        symbol: asset.symbol,
-        label: asset.label,
-        price: q ? q.price : null,
-        change: q ? q.change : null,
-        isCrypto: false,
-      }
-    }),
-  ]
+  const cryptoItems = CRYPTO_TICKERS.map(({ symbol, label }) => {
+    const t = tickers[symbol]
+    return {
+      symbol,
+      label,
+      price: t ? t.price : null,
+      change: t ? t.change24h : null,
+      isCrypto: true,
+    }
+  })
+
+  const tradFiItems = TRADITIONAL_ASSETS.map((asset) => {
+    const q = tradFiPrices[asset.symbol]
+    return {
+      symbol: asset.symbol,
+      label: asset.label,
+      price: q ? q.price : null,
+      change: q ? q.change : null,
+      isCrypto: false,
+    }
+  })
 
   return (
     <div className="w-full h-7 bg-void border-t border-white/5 overflow-hidden flex-shrink-0">
@@ -151,7 +197,18 @@ export default function PriceTicker() {
         {/* 원본 + 복제본 = 무한 루프 */}
         {[0, 1].map((copy) => (
           <div key={copy} className="flex items-center h-full">
-            {items.map((item) => (
+            {cryptoItems.map((item) => (
+              <TickerItem
+                key={`${copy}-${item.symbol}`}
+                symbol={item.symbol}
+                label={item.label}
+                price={item.price}
+                change={item.change}
+                isCrypto={item.isCrypto}
+              />
+            ))}
+            <KimchiIndicator key={`${copy}-kimchi`} data={kimchiData} />
+            {tradFiItems.map((item) => (
               <TickerItem
                 key={`${copy}-${item.symbol}`}
                 symbol={item.symbol}

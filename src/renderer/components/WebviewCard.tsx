@@ -2,6 +2,20 @@ import { useRef, useCallback, useState, useEffect } from 'react'
 import { useCanvasStore } from '../stores/useCanvasStore'
 import type { WebviewData } from '../types'
 
+// Domain → keyword mappings for auto-edge detection
+const DOMAIN_KEYWORDS: Record<string, string[]> = {
+  'binance.com': ['binance', 'bnb'],
+  'coinbase.com': ['coinbase'],
+  'coingecko.com': ['coingecko'],
+  'coinmarketcap.com': ['cmc', 'coinmarketcap'],
+  'tradingview.com': ['tradingview', 'chart'],
+  'etherscan.io': ['ethereum', 'eth', 'etherscan'],
+  'solscan.io': ['solana', 'sol'],
+  'dexscreener.com': ['dex', 'defi'],
+  'upbit.com': ['upbit'],
+  'bybit.com': ['bybit'],
+}
+
 interface WebviewCardProps {
   card: WebviewData
 }
@@ -10,6 +24,7 @@ export default function WebviewCard({ card }: WebviewCardProps) {
   const updateCardPosition = useCanvasStore((s) => s.updateCardPosition)
   const updateCardSize = useCanvasStore((s) => s.updateCardSize)
   const removeCard = useCanvasStore((s) => s.removeCard)
+  const updateWebviewMeta = useCanvasStore((s) => s.updateWebviewMeta)
 
   const [isLoading, setIsLoading] = useState(true)
   const [hasFailed, setHasFailed] = useState(false)
@@ -20,25 +35,90 @@ export default function WebviewCard({ card }: WebviewCardProps) {
   const dragStart = useRef({ x: 0, y: 0, cardX: 0, cardY: 0 })
   const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0 })
 
+  // Auto-edge: match webview keywords against canvas cards
+  const checkWebviewEdges = useCallback((title: string, url: string) => {
+    const store = useCanvasStore.getState()
+
+    // Remove existing webview-auto edges from this card
+    const autoEdges = store.edges.filter(
+      (e) => e.label === 'webview-auto' &&
+        (e.fromNodeId === card.id || e.toNodeId === card.id)
+    )
+    for (const edge of autoEdges) {
+      store.removeEdge(edge.id)
+    }
+
+    // Extract keywords from title
+    const titleWords = title
+      .toLowerCase()
+      .split(/[\s\-_|:,./()[\]{}]+/)
+      .filter((w) => w.length > 2)
+
+    // Extract domain keywords
+    let domainWords: string[] = []
+    try {
+      const hostname = new URL(url).hostname
+      for (const [domain, keywords] of Object.entries(DOMAIN_KEYWORDS)) {
+        if (hostname.includes(domain)) {
+          domainWords = keywords
+          break
+        }
+      }
+    } catch { /* invalid url */ }
+
+    const allKeywords = [...new Set([...titleWords, ...domainWords])]
+    if (allKeywords.length === 0) return
+
+    // Match against canvas cards
+    for (const c of store.cards) {
+      if (c.id === card.id) continue
+      const cardText = (c.title + ' ' + (c.type === 'card' ? (c as any).content || '' : '')).toLowerCase()
+      const matched = allKeywords.some((kw) => cardText.includes(kw))
+      if (matched) {
+        store.addEdge(card.id, c.id, 'speculative', 'webview-auto')
+      }
+    }
+  }, [card.id])
+
+  // Capture webview metadata (title + URL)
+  const captureMetadata = useCallback(() => {
+    const wv = webviewRef.current as any
+    if (!wv) return
+    try {
+      const title = wv.getTitle?.() || ''
+      const url = wv.getURL?.() || ''
+      if (title || url) {
+        updateWebviewMeta(card.id, title, url)
+        checkWebviewEdges(title, url)
+      }
+    } catch { /* webview not ready */ }
+  }, [card.id, updateWebviewMeta, checkWebviewEdges])
+
   // Webview 이벤트 바인딩
   useEffect(() => {
     const wv = webviewRef.current
     if (!wv) return
 
     const onLoadStart = () => { setIsLoading(true); setHasFailed(false) }
-    const onLoadStop = () => setIsLoading(false)
+    const onLoadStop = () => { setIsLoading(false); captureMetadata() }
     const onFail = () => { setIsLoading(false); setHasFailed(true) }
+    const onNavigateInPage = () => captureMetadata()
+    const onTitleUpdated = () => captureMetadata()
 
     wv.addEventListener('did-start-loading', onLoadStart)
     wv.addEventListener('did-stop-loading', onLoadStop)
     wv.addEventListener('did-fail-load', onFail)
+    wv.addEventListener('did-navigate-in-page', onNavigateInPage)
+    wv.addEventListener('page-title-updated', onTitleUpdated)
 
     return () => {
       wv.removeEventListener('did-start-loading', onLoadStart)
       wv.removeEventListener('did-stop-loading', onLoadStop)
       wv.removeEventListener('did-fail-load', onFail)
+      wv.removeEventListener('did-navigate-in-page', onNavigateInPage)
+      wv.removeEventListener('page-title-updated', onTitleUpdated)
     }
-  }, [])
+  }, [captureMetadata])
 
   const handleReload = useCallback(() => {
     const wv = webviewRef.current as HTMLElement & { reload?: () => void }
@@ -127,10 +207,12 @@ export default function WebviewCard({ card }: WebviewCardProps) {
     [card.id, card.width, card.height, updateCardSize]
   )
 
-  // URL 표시용 — 긴 URL 축약
-  const displayUrl = card.url.length > 45
-    ? card.url.slice(0, 42) + '...'
-    : card.url
+  // Display live title/URL if available
+  const displayTitle = card.liveTitle || card.title
+  const currentUrl = card.liveUrl || card.url
+  const displayUrl = currentUrl.length > 45
+    ? currentUrl.slice(0, 42) + '...'
+    : currentUrl
 
   return (
     <div
@@ -144,7 +226,7 @@ export default function WebviewCard({ card }: WebviewCardProps) {
       >
         <div className="w-2 h-2 rounded-full flex-shrink-0 bg-accent-cyan" />
         <span className="flex-1 text-xs font-bold text-t1 truncate tracking-wide font-rajdhani">
-          {card.title}
+          {displayTitle}
         </span>
 
         {/* Reload */}

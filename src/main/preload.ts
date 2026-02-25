@@ -31,4 +31,14 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('coingecko:coin-data', { coinId }),
   searchCoinId: (symbol: string) =>
     ipcRenderer.invoke('coingecko:search', { symbol }),
+
+  // Binance Futures
+  fetchFundingRate: (symbol: string) =>
+    ipcRenderer.invoke('binance-futures:funding', { symbol }),
+  fetchOpenInterest: (symbol: string) =>
+    ipcRenderer.invoke('binance-futures:open-interest', { symbol }),
+
+  // Upbit Kimchi Premium
+  fetchKimchiPremium: (symbols: string[]) =>
+    ipcRenderer.invoke('upbit:kimchi-premium', { symbols }),
 })

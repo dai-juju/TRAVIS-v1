@@ -4,6 +4,8 @@ import { searchTavily } from './tavily'
 import { fetchCryptoNews, fetchFearGreed } from './feedApi'
 import { fetchRecentTrades, fetchMultipleTickers } from './binanceApi'
 import { fetchCoinData, searchCoinId } from './coingeckoApi'
+import { fetchFundingRate, fetchOpenInterest } from './binanceFuturesApi'
+import { fetchKimchiPremium } from './upbitApi'
 
 export function registerIpcHandlers() {
   // 기존 non-streaming 핸들러 (fallback)
@@ -150,5 +152,18 @@ export function registerIpcHandlers() {
   )
   ipcMain.handle('coingecko:search', async (_event, { symbol }) =>
     searchCoinId(symbol)
+  )
+
+  // Binance Futures
+  ipcMain.handle('binance-futures:funding', async (_event, { symbol }) =>
+    fetchFundingRate(symbol)
+  )
+  ipcMain.handle('binance-futures:open-interest', async (_event, { symbol }) =>
+    fetchOpenInterest(symbol)
+  )
+
+  // Upbit Kimchi Premium
+  ipcMain.handle('upbit:kimchi-premium', async (_event, { symbols }) =>
+    fetchKimchiPremium(symbols)
   )
 }
