@@ -1,492 +1,318 @@
-# TRAVIS — Context Handoff Document
+# TRAVIS Context Handoff
 
-> 새 AI 세션에서 이 문서 하나만 읽으면 프로젝트 전체 맥락을 즉시 파악할 수 있습니다.
-> 마지막 업데이트: 2026-02-27 | Phase 2 완료 시점
-
----
-
-## 1. 프로젝트 한 줄 요약
-
-**TRAVIS는 트레이더를 위한 AI 데스크톱 앱으로, 사용자가 자연어로 대화하면 Claude AI가 정보 카드와 웹사이트를 무한 캔버스 위에 배치하고, 실시간 뉴스/시세/온체인 데이터를 모자이크 이론(Mosaic Theory) 기반으로 통합 분석합니다.**
-
-- 킬체인: DETECT → COLLECT → JUDGE → EXECUTE
-- 슬로건: "Shape Your Market"
-- 핵심 철학: AI는 데이터를 필터링하지 않고 관련성 점수만 매김. Raw Feed가 기본.
+> 이 문서를 새 Claude AI 채팅창에 붙여넣으면, TRAVIS 프로젝트의 모든 맥락을 즉시 파악하고 바로 개발 작업을 이어갈 수 있습니다.
+> 마지막 업데이트: 2026-03-02 | Phase 3A 완료 시점
 
 ---
 
-## 2. 기술 스택 요약
+## 프로젝트 개요
 
-| 기술 | 버전/상세 | 역할 |
-|------|----------|------|
-| Electron | - | 데스크톱 앱 프레임워크 (Main + Renderer 구조) |
-| React | + TypeScript | 프론트엔드 UI |
-| Zustand | 7개 스토어 | 상태 관리 |
-| TailwindCSS | 커스텀 디자인 시스템 | 스타일링 |
-| Vite | dev server + bundler | 빌드 도구 |
-| Claude API | Tool Use + SSE Streaming | AI 두뇌 (7개 도구) |
-| Binance WebSocket | `wss://stream.binance.com` | 실시간 시세 |
-| Framer Motion | AnimatePresence | 카드 등장/퇴장 애니메이션 |
-| react-simple-maps | ComposableMap | FEED 탭 세계 지도 |
-| react-markdown + remark-gfm | - | 카드 내 마크다운 렌더링 |
-
-**외부 API**:
-- Claude API (Anthropic) — AI 대화 + 도구 사용
-- Tavily — 웹 검색
-- Binance REST — 거래 내역, 24h 시세, 선물 (펀딩비/OI)
-- CoinGecko — 코인 상세 데이터 (시총, 카테고리, ATH)
-- Upbit — 김치 프리미엄 계산
-- CryptoCompare — 암호화폐 뉴스
-- Alternative.me — Fear & Greed Index
-- Yahoo Finance (v8 Chart API) — 전통 자산 (S&P500, NASDAQ, DXY, 금, 유가)
+- **TRAVIS** = AI 암호화폐 트레이딩 인텔리전스 데스크톱 앱
+- Electron 33 + React 18 + TypeScript + Zustand + TailwindCSS + Vite
+- **핵심 가치**: 사용자가 자연어로 말하면 AI가 정보 카드/차트/웹사이트를 무한 캔버스에 자동 배치
+- 아이언맨의 JARVIS를 트레이더 버전으로 만든 것
+- **내부 프레임워크 — Killchain**: DETECT → COLLECT → JUDGE → EXECUTE
+- **핵심 철학 — Mosaic Theory**: AI는 데이터를 필터링하지 않음. 중요도만 매김. Raw Feed가 기본. "AI가 건너뛴 타일이 당신을 부자로 만들 수도 있다."
+- CEO/솔로 파운더: 김준수 (한양대 경영학, 휴학 중, 풀스택을 AI로 독학)
+- 총 코드 ~10,300줄 (50+ 파일)
 
 ---
 
-## 3. 파일 구조 전체 트리
+## 현재 상태
 
-**55개 파일, 약 7,000 줄** (주석 포함)
-
-```
-src/
-├── main/                              # Electron Main Process (백엔드)
-│   ├── index.ts                       # 앱 시작점: BrowserWindow 생성, IPC 등록
-│   ├── ipc.ts                         # IPC 핸들러 13개 등록 (Claude, Binance, CoinGecko, etc.)
-│   ├── preload.ts                     # contextBridge — Renderer가 Main을 호출하는 보안 통로
-│   ├── tavily.ts                      # Tavily 웹 검색 API 호출
-│   ├── binanceApi.ts                  # Binance REST: fetchRecentTrades, fetchMultipleTickers
-│   ├── binanceFuturesApi.ts           # Binance Futures: fetchFundingRate, fetchOpenInterest
-│   ├── coingeckoApi.ts                # CoinGecko: fetchCoinData, searchCoinId (동적 검색)
-│   ├── upbitApi.ts                    # Upbit 김치 프리미엄: getExchangeRate + 병렬 fetch
-│   ├── feedApi.ts                     # CryptoCompare 뉴스 + Fear&Greed Index
-│   └── yahooFinance.ts                # Yahoo Finance: S&P500, NASDAQ, DXY, GOLD, OIL
-│
-└── renderer/                          # React 프론트엔드
-    ├── App.tsx                        # 루트: Boot → TabBar + (COMMAND | FEED) + StatusBar + Ticker
-    ├── main.tsx                       # ReactDOM.createRoot 진입점
-    ├── index.css                      # CSS 변수, 애니메이션 (boot-ring, scan-sweep, spawn-glow 등)
-    ├── vite-env.d.ts                  # Vite 타입 선언
-    │
-    ├── components/
-    │   ├── BootSequence.tsx           # 시네마틱 부팅 애니메이션 (4단계: 다크→로고→상태→페이드)
-    │   ├── TabBar.tsx                 # COMMAND / FEED 탭 전환
-    │   ├── Canvas.tsx                 # 무한 캔버스: 패닝(드래그), 줌(휠), 그리드 배경
-    │   ├── Card.tsx                   # 정보 카드: 드래그/리사이즈, 실시간 시세, 플래시, focusedCard
-    │   ├── WebviewCard.tsx            # 웹뷰 카드: webview 태그, 메타데이터 캡처, 자동 엣지
-    │   ├── ChatPanel.tsx              # AI 채팅 패널: 메시지 목록, 스트리밍 커서, focusedCard 바
-    │   ├── NewsFeed.tsx               # 좌측 뉴스 피드 패널 (220px, 자동 스크롤)
-    │   ├── EdgeLayer.tsx              # 엣지 SVG 레이어 + ON/OFF 토글 버튼
-    │   ├── NodeEdge.tsx               # 개별 연결선: strong/weak/speculative 스타일
-    │   ├── SpawnAnimation.tsx         # Framer Motion 카드 등장 애니메이션
-    │   ├── PriceTicker.tsx            # 하단 무한스크롤 시세 바 (crypto + tradFi + 김치)
-    │   ├── StatusBar.tsx              # WebSocket 연결 상태 표시
-    │   ├── LatencyIndicator.tsx       # 지연시간 표시 (초록/노랑/빨강 점)
-    │   ├── SettingsModal.tsx          # 설정 모달 (API키, 모델, 컨텍스트, AI스코어링)
-    │   ├── MosaicFeed.tsx             # FEED 탭 레이아웃: 상단(지도+사이드바) + 하단(7컬럼)
-    │   ├── WorldMap.tsx               # react-simple-maps 세계 지도 + 뉴스 핀
-    │   ├── EventCalendar.tsx          # 경제 이벤트 캘린더 (FOMC, CPI, NFP, 암호화폐)
-    │   ├── FeedSidebar.tsx            # FEED 탭 우측 사이드바 (검색 + 카테고리 필터)
-    │   ├── MultiColumnFeed.tsx        # 7개 FeedColumn 배치
-    │   ├── FeedColumn.tsx             # 단일 카테고리 컬럼 (독립 스크롤)
-    │   ├── FeedItem.tsx               # 뉴스 아이템: 카테고리 스트립, 중요도 뱃지, 드래그, AI 점수
-    │   ├── InvestigationMode.tsx      # 전체 화면 오버레이: 3×2 그리드, ESC 닫기, 스캔 라인
-    │   ├── InvestigationPanel.tsx     # 개별 패널 프레임: panelType 라우팅, 폴드/최대화
-    │   ├── InvestigationChart.tsx     # TradingView iframe 차트
-    │   ├── InvestigationNews.tsx      # 심볼 키워드 매칭 뉴스 필터
-    │   ├── InvestigationWhale.tsx     # 고래 거래 테이블 ($100K+ 필터)
-    │   ├── InvestigationOnchain.tsx   # CoinGecko 온체인 데이터 (시총, ATH, 공급량)
-    │   └── InvestigationSector.tsx    # 섹터 비교 테이블 (같은 카테고리 코인들)
-    │
-    ├── stores/
-    │   ├── useCanvasStore.ts          # cards[], edges[], viewport, 카드 CRUD, 엣지 CRUD, 호버/핀
-    │   ├── useChatStore.ts            # messages[], isLoading, streamingMessageId, focusedCard
-    │   ├── useFeedStore.ts            # items[] (max 200), filters, addItems(Map 중복제거), updateScoring
-    │   ├── useSettingsStore.ts        # persist middleware, apiKey, tavilyApiKey, model, contextPrompt
-    │   ├── useRealtimeStore.ts        # tickers{}, connectionStatus, subscribe/unsubscribe (→ dataSourceManager)
-    │   ├── useTabStore.ts             # activeTab: 'command' | 'feed'
-    │   └── useInvestigationStore.ts   # panels[], SECTOR_MAP, loadPanelData (4-phase async), open/close
-    │
-    ├── services/
-    │   ├── claude.ts                  # AI 두뇌: 시스템 프롬프트, 7개 도구, executeTool, SSE streaming, 멀티턴 루프
-    │   ├── binanceWs.ts               # BinanceDataSource: WebSocket 연결, 구독, 재접속 (지수적 백오프)
-    │   ├── dataSource.ts              # DataSource 인터페이스 + DataSourceManager (참조 카운팅)
-    │   ├── feedService.ts             # FeedServiceManager: CryptoCompare(60s) + FearGreed(300s) 폴링
-    │   └── scoringService.ts          # ScoringService: Haiku 모델 배치 스코어링 (5개씩, 10초 타이머)
-    │
-    ├── types/
-    │   └── index.ts                   # CardData, WebviewData, EdgeData, TickerData, FeedItem, ApiMessage 등
-    │
-    └── utils/
-        └── geoKeywords.ts             # 키워드→좌표 매핑 (15개 도시), extractLocation(), getCoordinates()
-```
+- **Phase 1** (기본 구조) ✅ — 캔버스, 채팅, 카드, WebSocket, Investigation Mode
+- **Phase 2** (모자이크 인텔리전스) ✅ — 탭, 뉴스, FEED탭, 세계지도, 캘린더, SSE, 선물, 김프
+- **Phase 3A** (AI 도구 무장 + 체감 속도) ✅ — 17개 도구, 6거래소, CMC, 스켈레톤, 사운드, 에러 처리
+- **Phase 3B** (개인화 + 기억 시스템) — **미시작** (온보딩, 프로필, SQLite, 캔버스 저장, i18n)
 
 ---
 
-## 4. 완료된 기능 (Phase 1 + Phase 2)
+## 핵심 아키텍처
 
-### Phase 1 (기본 구조)
+### Electron 2-프로세스 구조
+```
+Main Process (뒷방)          ←— IPC (30채널) —→     Renderer Process (무대)
+  API 호출, WebSocket,                              React UI, AI 서비스,
+  보안 처리                                          Zustand 7개 스토어
+```
 
-| 단계 | 기능 | 핵심 파일 |
-|------|------|----------|
-| 1-1 | 프로젝트 셋업 | Electron + React + TS + Tailwind + Vite |
-| 1-2 | 부팅 시퀀스 | `BootSequence.tsx` — 4단계 시네마틱 애니메이션 |
-| 1-3 | 레이아웃 | `Canvas.tsx` (무한 캔버스) + `ChatPanel.tsx` |
-| 1-4 | Claude API | `claude.ts`, `ipc.ts` — 멀티턴 도구 사용 |
-| 1-5 | 카드 렌더링 | `Card.tsx`, `SpawnAnimation.tsx` — 마크다운, 드래그, 리사이즈 |
-| 1-6 | 웹뷰 | `WebviewCard.tsx` — 웹사이트 삽입, 에러 폴백 |
-| 1-7 | 실시간 데이터 | `binanceWs.ts`, `dataSource.ts` — WebSocket, 참조 카운팅 |
-| 1-8 | Investigation Mode | `InvestigationMode.tsx` — 6패널 분석 그리드 |
+### 5-Step 도구 추가 패턴 (모든 AI 도구는 이 5단계를 따름)
+1. `src/main/api/[name]Api.ts` — 실제 API 호출 로직
+2. `src/main/ipc.ts` — IPC handler 등록
+3. `src/main/preload.ts` — contextBridge에 메서드 노출
+4. `src/renderer/services/claude.ts` — TOOLS 배열에 도구 정의
+5. `src/renderer/services/claude.ts` — executeTool()에 case 추가
 
-### Phase 2A (기반 강화)
-
-| 기능 | 핵심 파일 |
-|------|----------|
-| 디자인 시스템 | `index.css` (CSS 변수), `tailwind.config.js` (커스텀 색상/폰트) |
-| 탭 시스템 | `TabBar.tsx`, `useTabStore.ts` — COMMAND / FEED |
-| 노드 엣지 | `NodeEdge.tsx`, `EdgeLayer.tsx`, `useCanvasStore.ts` (edges[]) — 호버 리빌 |
-| 시세 바 | `PriceTicker.tsx` — 크립토(WebSocket) + 전통자산(REST 60s) + 김치 |
-| 3패널 레이아웃 | `App.tsx` — NewsFeed \| Canvas \| ChatPanel |
-| AI 웹 검색 | `tavily.ts`, `claude.ts` (search_web 도구) |
-
-### Phase 2B (뉴스 피드)
-
-| 기능 | 핵심 파일 |
-|------|----------|
-| 피드 데이터 서비스 | `feedService.ts`, `feedApi.ts` — CryptoCompare + Fear&Greed |
-| 피드 스토어 | `useFeedStore.ts` — Map 중복제거, 200개 제한, 필터 |
-| 뉴스 피드 UI | `NewsFeed.tsx`, `FeedItem.tsx` — 좌측 패널, 드래그-투-캔버스 |
-| AI 스코어링 | `scoringService.ts` — Haiku 배치 평가, JSON 파싱 + regex 폴백 |
-
-### Phase 2C (FEED 탭)
-
-| 기능 | 핵심 파일 |
-|------|----------|
-| FEED 레이아웃 | `MosaicFeed.tsx` — 상단(지도+사이드바) + 하단(7컬럼), 드래그 핸들 |
-| 세계 지도 | `WorldMap.tsx`, `geoKeywords.ts` — 뉴스 핀, 펄스 애니메이션 |
-| 피드 사이드바 | `FeedSidebar.tsx` — 검색 + 7카테고리 필터 |
-| 7컬럼 피드 | `MultiColumnFeed.tsx`, `FeedColumn.tsx` — MACRO~WORLD |
-| 이벤트 캘린더 | `EventCalendar.tsx` — FOMC/CPI/NFP 하드코딩 2025-2026 |
-
-### Phase 2D (고급 기능)
-
-| 기능 | 핵심 파일 |
-|------|----------|
-| SSE 스트리밍 | `ipc.ts` (claude:chat-stream), `claude.ts` (streamOneRound) |
-| focusedCard 컨텍스트 | `Card.tsx` (onClick), `useChatStore.ts`, `claude.ts` ([FOCUSED CARD CONTEXT]) |
-| Investigation 업그레이드 | `useInvestigationStore.ts` (loadPanelData 4단계), 5개 Investigation*.tsx |
-| 선물 데이터 | `binanceFuturesApi.ts` — 펀딩비, OI → Overview 패널에 추가 |
-| 김치 프리미엄 | `upbitApi.ts`, `PriceTicker.tsx` (KimchiIndicator) |
-| 웹뷰 인식 | `WebviewCard.tsx` (captureMetadata, checkWebviewEdges), [OPEN WEBVIEWS] 프롬프트 |
+### 설계 원칙
+- **하드코딩 금지** — AI 행동을 코드에서 분기하지 않음. AI에게 도구 주고 프롬프트에 원칙만 적음
+- **독립적 실패** — 모든 fetch는 Promise.allSettled. 하나 실패해도 나머지 정상
+- **Fire Hose** — 도구는 모든 데이터를 반환, AI가 필터링/요약
+- **비용 의식** — 메인 대화=Sonnet, 뉴스 스코어링=Haiku, 무료 API 우선
+- **Lazy Connection** — 안 쓰면 안 연결 (CCXT Pro WS는 5분 idle 시 자동 해제)
+- **동적 심볼 해석** — CoinGecko /search로 아무 코인이든 자동 resolve (한국어 포함)
 
 ---
 
-## 5. 핵심 아키텍처 결정 사항
+## AI 도구 17개 (claude.ts, 1500줄)
 
-### 5.1 Main↔Renderer IPC 패턴
+### Display (7)
+| 도구 | 파라미터 | 하는 일 |
+|------|---------|---------|
+| `spawn_card` | title, content, cardType?, symbol?, images?, relatedTo? | 정보 카드 생성 (스켈레톤→콘텐츠 2단계) |
+| `spawn_webview` | url, title, width?, height? | 웹사이트 캔버스 임베드 |
+| `spawn_multiple_cards` | cards[], webviews?[] | 복수 카드+웹뷰 동시 (그리드 배치 + 자동 연결선) |
+| `remove_cards` | target | 카드 삭제 ("all" 또는 ID) |
+| `rearrange` | layout | 카드 재배치 ("grid"/"stack") |
+| `update_card` | cardId, content | 기존 카드 내용 수정 |
+| `control_webview` | webviewId, action, url?, symbol?, interval?, width?, height? | 웹뷰 조작 (navigate/resize/tv_change_symbol/tv_change_interval) |
 
-```
-[Renderer]                              [Main]
-window.api.someMethod(params)  →→→  ipcMain.handle('channel', handler)
-                               ←←←  return result
+### Data (8)
+| 도구 | 하는 일 | 데이터 출처 |
+|------|---------|-------------|
+| `fetch_coin_data` | 코인 종합 (가격, 시총, 공급량, 차트) | CoinGecko + Binance + CMC |
+| `fetch_market_overview` | 시장 전체 (BTC 도미넌스, 총 시총, F&G, Top 상승/하락) | CoinGecko + Alternative.me |
+| `fetch_derivatives_data` | 선물 8개 API (펀딩비, OI, 롱숏비, 청산) | Binance Futures |
+| `fetch_whale_activity` | 고래 대형 거래 + 호가벽 | Binance |
+| `fetch_trending` | 트렌딩 코인/NFT/카테고리 | CoinGecko |
+| `fetch_exchange_price` | 특정 거래소 가격 | CCXT (6거래소) |
+| `compare_exchange_prices` | 멀티 거래소 비교 + 김치 프리미엄 | CCXT + Upbit |
+| `search_web` | 최신 뉴스/이벤트 웹 검색 | Tavily |
 
-window.api.startChatStream()   →→→  ipcMain.on('claude:chat-stream', handler)
-                               ←←←  event.sender.send('stream:text-delta', data)
-                               ←←←  event.sender.send('stream:tool-start', data)
-                               ←←←  event.sender.send('stream:end', {})
-```
-
-- `handle/invoke`: 1:1 요청-응답 (대부분의 REST API 호출)
-- `on/send`: 1:N 스트리밍 (Claude SSE만 사용)
-- 새 API 추가 패턴: `main/xxxApi.ts` → `ipc.ts에 handle 등록` → `preload.ts에 메서드 추가` → `renderer에서 window.api.xxx() 호출`
-
-### 5.2 AI 스트리밍 방식 (SSE)
-
-```
-claude.ts sendMessage()
-  └→ streamOneRound() [Promise]
-       ├→ api.startChatStream(payload)     // fire-and-forget
-       ├→ onStreamEvent('stream:text-delta')  // 텍스트 조각 → 메시지 실시간 업데이트
-       ├→ onStreamEvent('stream:tool-start')  // 도구 호출 시작
-       ├→ onStreamEvent('stream:tool-delta')  // 도구 입력 JSON 조각 누적
-       └→ onStreamEvent('stream:end')         // resolve() → 다음 턴 또는 완료
-```
-
-- 도구 입력 JSON은 조각으로 도착 → `jsonStr`에 누적 후 `stream:end` 시점에 `JSON.parse`
-- 멀티턴 루프: `tool_use` stop_reason이면 도구 실행 → `tool_result`를 user 메시지로 추가 → 다음 라운드
-- 최대 10턴 제한
-
-### 5.3 focusedCard 컨텍스트 방식
-
-```
-Card.tsx content 클릭 → useChatStore.setFocusedCard({id, title, content})
-  → ChatPanel.tsx에 "xxx 참조 중" 바 표시
-  → 다음 sendMessage() 시 buildSystemPrompt()에서 [FOCUSED CARD CONTEXT] 섹션 추가
-  → AI가 해당 카드 내용을 참조하여 응답
-  → 빈 캔버스 클릭 → clearFocusedCard()
-```
-
-### 5.4 동적 코인 검색 (하드코딩 → CoinGecko search fallback)
-
-```
-useInvestigationStore.ts loadPanelData():
-  1. SYMBOL_TO_COINGECKO[symbol] 하드코딩 맵 확인 (22개 코인)
-  2. 없으면 → api.searchCoinId(symbol) → CoinGecko /search API 호출
-  3. 결과를 resolvedCache에 캐싱 (재요청 방지)
-```
-
-`coingeckoApi.ts`의 `searchCoinId()`:
-- 하드코딩 맵 → 캐시 → API 검색의 3단계 우선순위
-- 검색 결과에서 symbol이 정확히 일치하는 것 선택
-
-### 5.5 TradingView iframe 차트
-
-`InvestigationChart.tsx`:
-- `https://www.tradingview.com/widgetembed/` URL에 `BINANCE:${symbol}USDT` 파라미터
-- iframe sandbox: `allow-scripts allow-same-origin allow-popups`
-- lightweight-charts가 아닌 TradingView 위젯 사용 (풍부한 기능)
-
-### 5.6 AI 뉴스 스코어링 배치 처리
-
-`scoringService.ts`:
-- Haiku 모델(`claude-haiku-4-5-20251001`) 사용 — 비용 효율
-- 5개 모이면 즉시 처리 OR 10초 타이머 만료 시 처리
-- 한 번에 최대 10개
-- JSON 파싱 2단계: `JSON.parse` → 실패 시 `text.match(/\[[\s\S]*\]/)` regex 추출
-- 결과를 `useFeedStore.updateScoring()`으로 반영
-
-### 5.7 심볼 파싱은 AI 프롬프트로 처리
-
-`claude.ts` 시스템 프롬프트에 명시:
-```
-IMPORTANT — Symbol Field Rules:
-- 'BTCUSDT 분석' → symbol: 'BTC' (not 'BTCUSDT')
-- 'TRIAUSDT' → symbol: 'TRIA'
-```
-- 코드에서 별도 파싱 로직 없이 AI가 올바른 base symbol을 추출하도록 유도
-- `useInvestigationStore.ts`의 `loadPanelData()`에서도 안전장치로 suffix strip: `symbol.replace(/(USDT|BUSD|FDUSD|USD|KRW|BTC)$/i, '')`
+### Analysis (2)
+| 도구 | 하는 일 |
+|------|---------|
+| `open_investigation` | Investigation Mode 전체화면 분석 열기 |
+| `update_investigation` | 패널 동적 추가/제거/수정/순서변경 |
 
 ---
 
-## 6. 스킵된 기능과 이유
+## 주요 파일 맵
 
-### 2D-1: Insight Pulse (Cross-Analysis Alerts) — 스킵
-
-**원래 계획**: AI가 캔버스 노드 간 관계를 자동 분석하여 💡 칩을 표시, 클릭 시 패턴/신뢰도 팝업
-
-**스킵 이유**:
-1. focusedCard + 카드 간 엣지로 이미 관계 시각화 가능
-2. 자동 분석은 매 카드 추가/가격 변동 시 Claude API를 호출해야 해서 **API 비용이 과도**
-3. 스코어링 서비스(Haiku)도 이미 뉴스 중요도를 평가 중 — 추가 API 호출 부담
-4. 사용자가 직접 카드를 참조하여 AI에게 물어보는 방식이 더 자연스러움
-
-**향후 구현 시 참고**: InsightPulse 서비스는 scoringService와 유사한 패턴으로, 캔버스 변경 시 debounce → 배치 분석 → 칩 표시 방식이 적절
-
-### Investigation Mode 미구현 부분
-
-- **Panel drag-to-reposition**: 그리드 내 패널 순서 변경 — 미구현 (고정 3×2)
-- **Pop-out button**: 패널을 플로팅 오버레이로 분리 — 미구현
-
----
-
-## 7. 알려진 이슈 / 기술 부채
-
-### 7.1 카테고리 색상 매핑 중복 (4곳)
-
-동일한 7색 매핑이 4개 파일에 독립적으로 정의됨:
-- `FeedItem.tsx` — `CATEGORY_COLORS` 객체
-- `FeedSidebar.tsx` — `ALL_CATEGORIES` 배열 내 `color` 필드
-- `MultiColumnFeed.tsx` — `COLUMNS` 배열 내 `color` 필드
-- `EventCalendar.tsx` — `CATEGORY_COLOR` 객체
-
-**추가로**: `Card.tsx`와 `NodeEdge.tsx`에 동일한 `getAccentColor()` 함수가 중복 정의됨
-
-**해결 방안**: `src/renderer/constants/colors.ts`에 `CATEGORY_COLORS`, `IMPORTANCE_COLORS`, `getAccentColor`를 통합 정의
-
-### 7.2 타입 안전성 문제
-
-- `claude.ts`에서 `(window as any).api` 사용 (2곳) — 타입 정의 필요
-- `feedService.ts`에서 `(window as unknown as { api: Record<string, Function> })` 사용 (2곳)
-- `WebviewCard.tsx`에서 `(c as any).content` 사용 — 타입 가드로 대체 가능
-- `useInvestigationStore.ts`에서 `api`를 `(window as unknown as ...)` 캐스팅
-
-**해결 방안**: `src/renderer/types/index.ts`에 `WindowApi` 인터페이스를 정의하고, `window.api`의 타입을 선언
-
-### 7.3 console.log 디버그 문
-
-- `claude.ts` — `[TRAVIS] search_web called`, `[TRAVIS] sendMessage` (3곳)
-- `scoringService.ts` — `[ScoringService] batch scoring failed`
-- `feedService.ts` — `[feedService] ... failed`
-
-**해결 방안**: 디버그 플래그 또는 로거 유틸리티 도입
-
-### 7.4 빈 catch 블록 (Silent Error)
-
-- `binanceWs.ts` — JSON 파싱 실패 무시, WebSocket onerror 빈 처리
-- `claude.ts` — 도구 JSON 파싱 실패 무시, 개별 심볼 시세 fetch 실패 무시
-- `WebviewCard.tsx` — URL 파싱, webview 메타데이터 캡처 실패 무시
-- `ipc.ts` — SSE 스트림 파싱 실패 무시
-
-### 7.5 하드코딩 매직넘버
-
-- 캔버스: `CARD_GAP=24`, `ROW_WRAP_WIDTH=1400`, 시작점 `(80, 80)`
-- 스트리밍: `max_tokens=4096`, `maxTurns=10`
-- 폴링: CryptoCompare `60_000ms`, FearGreed `300_000ms`
-- WebSocket: `reconnectDelay=1000`, `MAX_RECONNECT_DELAY=30000`
-- 시세 바: tradFi 폴링 `60_000ms`, 김치 폴링 `60_000ms`
-- 가격 플래시: `500ms` 타임아웃
-- AI 스코어링: `BATCH_SIZE=5`, `MAX_BATCH=10`, `TIMER_MS=10_000`
-
-### 7.6 드래그 핸들러 중복
-
-`Card.tsx`와 `WebviewCard.tsx`에 거의 동일한 드래그/리사이즈 로직이 각각 구현됨. 커스텀 훅(`useDraggable`, `useResizable`)으로 추출 가능.
-
-### 7.7 Anthropic API 버전 중복
-
-`ipc.ts`에서 `'anthropic-version': '2023-06-01'`이 2곳에 하드코딩. 상수로 추출 필요.
-
-### 7.8 타임아웃 누락
-
-- `ipc.ts` SSE 스트리밍에 타임아웃 없음 — 서버 행 시 무한 대기 가능
-- `binanceWs.ts` WebSocket 연결에 타임아웃 없음
-
----
-
-## 8. 다음 개발 단계 후보
-
-### Phase 3 후보 기능
-
-| 우선순위 | 기능 | 설명 |
-|---------|------|------|
-| **높음** | Insight Pulse | 캔버스 노드 간 자동 크로스 분석 (2D-1 스킵분) |
-| **높음** | 포트폴리오 트래커 | 보유 자산 관리, 손익 계산, 리스크 분석 |
-| **높음** | 알림 시스템 | 가격 알림, 뉴스 알림, 김치 프리미엄 알림 |
-| **중간** | 히스토리/세이브 | 캔버스 상태 저장/불러오기, 세션 복구 |
-| **중간** | 사용자 인증 | 로그인, 프로필, 설정 클라우드 동기화 |
-| **중간** | 온체인 데이터 강화 | Etherscan/Solscan API, 지갑 추적, 트랜잭션 분석 |
-| **중간** | 멀티 모니터 | 팝아웃 패널, Investigation Mode 별도 창 |
-| **낮음** | 소셜 피드 | Twitter/X API, Telegram 채널 모니터링 |
-| **낮음** | 백테스팅 | 과거 데이터 기반 전략 검증 |
-
-### 기술 부채 해결 우선순위
-
-1. 카테고리 색상 통합 (`constants/colors.ts`)
-2. `WindowApi` 타입 정의 (`as any` 제거)
-3. 드래그 로직 커스텀 훅 추출
-4. 디버그 로거 도입
-
----
-
-## 9. 주요 설계 패턴 요약
-
-### 9.1 Zustand Store 패턴
-
-```typescript
-// 새 스토어 추가 시:
-// 1. src/renderer/stores/useXxxStore.ts 생성
-import { create } from 'zustand'
-
-interface XxxState {
-  data: SomeType[]
-  isLoading: boolean
-  fetchData: () => Promise<void>
-}
-
-export const useXxxStore = create<XxxState>((set, get) => ({
-  data: [],
-  isLoading: false,
-  fetchData: async () => {
-    set({ isLoading: true })
-    const result = await someApi()
-    set({ data: result, isLoading: false })
-  },
-}))
-
-// 2. 컴포넌트에서 사용:
-const data = useXxxStore((s) => s.data)
-const fetchData = useXxxStore((s) => s.fetchData)
-
-// 3. 외부(서비스)에서 사용:
-useXxxStore.getState().fetchData()
+### Main Process (src/main/)
+```
+index.ts                    ⭐ 앱 시작점, BrowserWindow 생성, IPC 등록 호출
+ipc.ts                      ⭐ IPC 핸들러 30개 등록 (모든 API 라우팅)
+preload.ts                  ⭐ contextBridge 보안 브릿지 (35개 메서드)
+tavily.ts                      Tavily 웹 검색 API
+binanceApi.ts                  Binance REST (체결, 시세, 캔들)
+binanceFuturesApi.ts           Binance 선물 (펀딩비, OI)
+coingeckoApi.ts                CoinGecko (코인 데이터, 검색)
+upbitApi.ts                    Upbit 김치 프리미엄
+yahooFinance.ts                전통자산 시세 (S&P500, 금, DXY)
+feedApi.ts                     CryptoCompare 뉴스 + Fear&Greed
+api/coinDataApi.ts             코인 종합 (CoinGecko+Binance+CMC 합침)
+api/marketOverviewApi.ts       시장 전체 현황
+api/derivativesApi.ts          선물 8개 엔드포인트
+api/whaleApi.ts                고래 거래 탐지
+api/trendingApi.ts             트렌딩 코인
+api/symbolResolverApi.ts       동적 심볼 해석 (CoinGecko /search)
+api/exchangeService.ts         CCXT 6거래소 통합
+api/cmcApi.ts                  CoinMarketCap 보조 데이터
+api/utils/fetchWithRetry.ts    자동 재시도 (exponential backoff, 3회)
+services/exchangeWsService.ts  CCXT Pro WebSocket (멀티거래소 실시간)
 ```
 
-영구 저장이 필요하면 `persist` 미들웨어 추가:
-```typescript
-create<XxxState>()(persist((set) => ({...}), { name: 'xxx-storage' }))
+### Renderer Process (src/renderer/)
 ```
-
-### 9.2 IPC 핸들러 추가 패턴 (새 외부 API 연동 시)
-
-```
-Step 1: src/main/xxxApi.ts 생성
-  → export async function fetchXxx(params): Promise<Result> { ... }
-
-Step 2: src/main/ipc.ts에 핸들러 등록
-  → import { fetchXxx } from './xxxApi'
-  → ipcMain.handle('xxx:data', async (_e, { params }) => fetchXxx(params))
-
-Step 3: src/main/preload.ts에 메서드 노출
-  → fetchXxxData: (params) => ipcRenderer.invoke('xxx:data', { params }),
-
-Step 4: Renderer에서 호출
-  → const result = await (window as any).api.fetchXxxData(params)
-```
-
-### 9.3 새 데이터 소스 추가 패턴 (WebSocket)
-
-```typescript
-// 1. DataSource 인터페이스 구현
-class NewExchangeDataSource implements DataSource {
-  readonly name = 'newexchange'
-  // connect(), disconnect(), subscribe(), unsubscribe() 구현
-  // onTicker 콜백으로 데이터 전달
-}
-
-// 2. App.tsx에서 등록
-const source = new NewExchangeDataSource()
-source.onTicker = (data) => useRealtimeStore.getState().updateTicker(data)
-dataSourceManager.registerSource(source)
-```
-
-### 9.4 새 UI 컴포넌트 추가 패턴
-
-```
-1. src/renderer/components/XxxComponent.tsx 생성
-2. 디자인 시스템 색상 사용: bg-void, bg-deep, bg-card, text-t1~t4
-3. 폰트: font-mono (데이터), font-rajdhani (제목)
-4. 스토어 연결: const data = useXxxStore((s) => s.data)
-5. App.tsx 또는 부모 컴포넌트에서 import + 배치
-```
-
-### 9.5 새 Investigation 패널 추가 패턴
-
-```
-1. PanelType에 새 타입 추가: 'newpanel'
-2. InvestigationNewPanel.tsx 컴포넌트 생성
-3. InvestigationPanel.tsx의 PanelContent에 case 추가
-4. useInvestigationStore.ts의 buildCoinPanels()에 패널 추가
-5. loadPanelData()에 데이터 fetch 로직 추가
-```
-
-### 9.6 AI 도구 추가 패턴
-
-```
-1. claude.ts TOOLS 배열에 새 도구 정의 추가
-2. executeTool() switch문에 case 추가
-3. 필요 시 새 IPC 핸들러 연결 (패턴 9.2 참조)
+App.tsx                     ⭐ 루트: Boot → TabBar + (COMMAND|FEED) + StatusBar + Ticker
+services/claude.ts          ⭐⭐ AI 두뇌 (1500줄): 17도구, SSE 스트리밍, 멀티턴 루프, 시스템 프롬프트
+services/dataSource.ts         DataSource 인터페이스 + Manager (참조 카운팅)
+services/binanceWs.ts          Binance WebSocket (지수 백오프 재연결)
+services/feedService.ts        뉴스 수집 (CryptoCompare 60s + F&G 300s 폴링)
+services/scoringService.ts     AI 뉴스 스코어링 (Haiku 배치, 5개씩/10초)
+services/soundService.ts       Web Audio API 사운드 합성 (부팅/스폰/응답/알림)
+stores/useCanvasStore.ts    ⭐ cards[], edges[], viewport, 카드 CRUD, 엣지, 자동 배치
+stores/useChatStore.ts         messages[], isLoading, streamingMessageId, focusedCard
+stores/useSettingsStore.ts     API 키 3개, 모델, 컨텍스트 (유일하게 localStorage 영구 저장)
+stores/useRealtimeStore.ts     tickers{}, connectionStatus, subscribe/unsubscribe
+stores/useInvestigationStore.ts  panels[], 6패널 기본, loadPanelData (4-phase async)
+stores/useTabStore.ts          activeTab: 'command' | 'feed'
+stores/useFeedStore.ts         items[] (max 200), filters, AI 스코어링 결과
+components/Canvas.tsx       ⭐ 무한 캔버스 (패닝, 줌 0.1x~3x, 그리드 배경)
+components/ChatPanel.tsx    ⭐ AI 채팅 (스트리밍, focusedCard 컨텍스트 바)
+components/Card.tsx         ⭐ 정보 카드 (마크다운, 실시간 가격, 드래그/리사이즈, 더블클릭→Investigation)
+components/WebviewCard.tsx     웹뷰 카드 (메타데이터 캡처, webviewRefs Map, 자동 엣지)
+components/InvestigationMode.tsx  전체화면 분석 (동적 그리드, ESC 닫기)
+components/InvestigationPanel.tsx 패널 라우터 (chart/news/whale/onchain/sector/markdown)
+components/Investigation[Chart|News|Whale|Onchain|Sector].tsx  각 패널 구현체
+components/BootSequence.tsx    시네마틱 부팅 (3.5초, 궤도 링 + 상태 메시지)
+components/TabBar.tsx          COMMAND/FEED 탭 전환
+components/NewsFeed.tsx        좌측 실시간 뉴스 패널
+components/FeedItem.tsx        개별 뉴스 (드래그→캔버스 카드 생성, 중요도 뱃지)
+components/MosaicFeed.tsx      FEED 탭 레이아웃 (지도/캘린더 + 7열 피드)
+components/WorldMap.tsx        세계지도 + 뉴스 핀 (중요도 색상, 5분 내 펄스)
+components/EventCalendar.tsx   FOMC/CPI/NFP 캘린더 (2025-2026)
+components/EdgeLayer.tsx       연결선 SVG 레이어 + ON/OFF 토글
+components/NodeEdge.tsx        개별 연결선 (strong/weak/speculative)
+components/PriceTicker.tsx     하단 무한 스크롤 시세 (크립토+전통+김프)
+components/StatusBar.tsx       WebSocket 연결 상태
+components/LatencyIndicator.tsx  데이터 지연 표시
+components/SettingsModal.tsx   설정 (API 키 3개, 모델, 컨텍스트, AI스코어링, 사운드)
+types/index.ts                 TypeScript 타입 전체 (CardData, WebviewData, EdgeData, TickerData, FeedItem 등)
+utils/geoKeywords.ts           키워드→좌표 매핑 (15개 도시), extractLocation()
 ```
 
 ---
 
-## 핵심 명령어
+## 데이터 소스
+
+| API | 무료/유료 | 용도 | 호출 방식 |
+|-----|-----------|------|-----------|
+| **CoinGecko** | 무료 | 코인 메타, 가격, 트렌딩, 심볼 검색 | 사용자 요청 시 |
+| **Binance REST** | 무료 | 실시간 가격, 체결, 캔들 | 사용자 요청 시 |
+| **Binance Futures** | 무료 | 펀딩비, OI, 롱숏비, 청산 (8개 API) | 사용자 요청 시 |
+| **Binance WebSocket** | 무료 | 실시간 가격 스트리밍 | 항상 연결 |
+| **CCXT 6거래소** | 무료 | Binance/Upbit/Bybit/Bithumb/OKX/Coinbase | 사용자 요청 시 |
+| **CCXT Pro WS** | 무료 | 멀티거래소 실시간 (lazy, 5min idle 해제) | 필요 시 |
+| **CoinMarketCap** | 유료(선택) | 순위, 카테고리, 출시일 | 사용자 요청 시 |
+| **Tavily** | 유료(필수) | AI 웹 검색 | 사용자 요청 시 |
+| **CryptoCompare** | 무료 | 크립토 뉴스 | 60초 폴링 |
+| **Alternative.me** | 무료 | Fear & Greed 지수 | 5분 폴링 |
+| **Upbit** | 무료 | 김치 프리미엄 | 60초 폴링 |
+| **Yahoo Finance** | 무료 | S&P500, NASDAQ, DXY, 금, 유가 | 60초 폴링 |
+| **Claude API** | 유료(필수) | AI 대화 + 17개 도구 (Sonnet) | 사용자 요청 시 |
+| **Claude Haiku** | 유료(저렴) | 뉴스 AI 스코어링 (배치) | 뉴스 수신 시 |
+
+---
+
+## 시스템 프롬프트 구조 (buildSystemPrompt)
+
+claude.ts의 `buildSystemPrompt()`가 매 요청마다 동적으로 생성:
+
+```
+[BASE_SYSTEM_PROMPT]
+  - TRAVIS 역할/성격 정의
+  - Symbol Field Rules: symbol은 반드시 base만 (BTC, 절대 BTCUSDT 아님)
+  - Card Connections: relatedTo로 연결선 생성
+  - Web Search: 시사/뉴스는 반드시 search_web 먼저
+  - Canvas Visualization Rules: 데이터 조회 후 반드시 spawn으로 시각화
+  - Tool Efficiency Rules: 불필요한 도구 호출 최소화
+
+[USER CONTEXT]  (설정한 경우)
+  사용자 프로필 (예: "나는 BTC 롱 포지션, 단타 위주")
+
+[REAL-TIME MARKET DATA]  (코인 감지 시)
+  사용자가 언급한 코인의 Binance 실시간 시세 자동 첨부
+
+[CURRENT CANVAS STATE]
+  캔버스 위 모든 카드 목록 (ID, 제목, 타입)
+
+[OPEN WEBVIEWS]  (웹뷰 있을 때)
+  열린 웹페이지 제목/URL + control_webview 사용 가이드
+
+[INVESTIGATION MODE — ACTIVE]  (분석 모드 열려있을 때)
+  분석 대상 심볼 + 현재 패널 목록 + update_investigation 가이드
+
+[FOCUSED CARD CONTEXT]  (카드 클릭 시)
+  선택된 카드의 전체 내용 (2000자 제한)
+```
+
+---
+
+## Phase 3 전체 로드맵
+
+### Phase 3A (완료 ✅) — 17개 태스크
+동적 심볼 해석, fetch_coin_data, fetch_market_overview, fetch_derivatives_data, fetch_whale_activity, fetch_trending, spawn_multiple_cards, 스켈레톤 카드, SSE/Tool 타임아웃 (60s/30s), 사운드 피드백, fetchWithRetry, CCXT 6거래소, CCXT Pro WebSocket, CoinMarketCap, Investigation 동적 패널, control_webview
+
+### Phase 3B (미시작) — 개인화 + 기억 시스템
+1. **온보딩 플로우** — 첫 실행 시 5단계 위저드 (거래소, 스타일, 관심 종목, 언어)
+2. **유저 프로필** — electron-store 영구 저장, 설정에서 수정
+3. **시스템 프롬프트 주입** — [USER PROFILE] + [PREVIOUS SESSION SUMMARY] + [CUSTOM DEFINITIONS]
+4. **관심 종목 프리로드** — 앱 시작 시 watchlist 코인 미리 fetch
+5. **SQLite 에피소딕 메모리** — better-sqlite3, sessions/mentions/insights 테이블
+6. **커스텀 정의 학습** — 사용자 주관적 표현 저장 + AI 주입
+7. **캔버스 저장/복원** — 앱 종료 시 auto-save, 다음 실행 시 복원
+8. **세션 요약** — Haiku로 대화 압축, 다음 세션에 주입
+9. **i18n** — ko.json/en.json, 프로필 언어 따름
+10. **뉴스 번역** — Haiku로 영→한 번역 (배치, 캐싱)
+
+### Phase 3C (미정) — 고급 기능
+포트폴리오 트래커, 알림 시스템, 온체인 데이터 강화, 멀티 모니터 등
+
+---
+
+## 핵심 아키텍처 패턴
+
+### AI 멀티턴 루프
+```
+사용자 질문 → buildSystemPrompt() → Claude API (SSE 스트리밍)
+  └→ stopReason="tool_use" → executeTool() → 결과를 대화에 추가 → 다시 API 호출
+  └→ stopReason="end_turn" → 최종 답변 (루프 종료)
+  └→ 최대 25턴
+```
+
+### 스켈레톤 카드 (2단계 스폰)
+```
+Phase 1: isLoading=true 빈 카드 즉시 생성 (shimmer 애니메이션)
+  ↓ 100ms
+Phase 2: 실제 콘텐츠 채움 + isLoading=false + 사운드 ♪
+```
+
+### SSE 스트리밍 이벤트
+```
+ipc.ts → Claude API SSE → stream:text-delta (텍스트 조각)
+                         → stream:tool-start (도구 호출 시작)
+                         → stream:tool-delta (도구 입력 JSON 조각)
+                         → stream:end (완료)
+```
+
+### IPC 패턴
+```
+Renderer: window.api.someMethod(params)  →→→  Main: ipcMain.handle('channel', handler)
+                                          ←←←  return result
+
+SSE만: on/send 패턴 (1:N 스트리밍)
+```
+
+### Investigation Mode 데이터 로드 (4-phase)
+```
+1. 심볼 해석: SYMBOL_TO_COINGECKO 맵 → 없으면 CoinGecko /search
+2. 병렬 fetch: Promise.allSettled (Binance 체결 + CoinGecko + 섹터 시세)
+3. 패널별 독립 업데이트: Whale, On-chain, Sector 각각
+4. 선물 보충: 펀딩비, OI (실패해도 OK)
+```
+
+---
+
+## 기술 부채 / 알려진 이슈
+
+- `(window as any).api` 타입 캐스팅 4곳 → WindowApi 인터페이스 정의로 교체
+- 카테고리 색상 정의 중복 4곳 (FeedItem, FeedSidebar, MultiColumnFeed, EventCalendar) → constants.ts 통합
+- Card/WebviewCard 드래그 로직 중복 → useDraggable 커스텀 훅 추출
+- console.log 디버그문 잔류 → 조건부 로거 도입
+- `anthropic-version` 하드코딩 2곳 (ipc.ts) → 상수로 통합
+
+---
+
+## 디자인 시스템
+
+```
+배경:  --void #01010a → --deep #030310 → --panel #06060f → --card #0a0a18
+강조:  보라 #a855f7 | 시안 #22d3ee | 초록 #22c55e | 빨강 #ef4444 | 앰버 #f59e0b
+카테고리: MACRO=앰버 | CRYPTO=보라 | ON-CHAIN=시안 | EXCHANGE=빨강 | SOCIAL=초록 | STOCKS=파랑 | WORLD=핑크
+폰트:  JetBrains Mono (데이터) | Rajdhani (제목, 밀리터리 느낌)
+```
+
+---
+
+## 명령어
 
 ```bash
-npm run dev      # 개발 서버 시작 (Electron + Vite)
+npm run dev      # 개발 서버 (Electron + Vite HMR)
 npm run build    # 프로덕션 빌드
-npx tsc --noEmit # TypeScript 타입 체크 (빌드 없이)
 ```
 
 ## 핵심 문서
 
-- `CLAUDE.md` — 프로젝트 규칙, 디자인 시스템, 아키텍처 개요
-- `docs/plan.md` — Phase 1-2 개발 계획 체크리스트
-- `docs/current-task.md` — 현재 진행 상태
-- `docs/DEVELOPER_GUIDE.md` — 10챕터 개발자 가이드북 (코드 포함, 한국어)
+- `CLAUDE.md` — 프로젝트 규칙, 디자인 시스템, 아키텍처 규칙, 17개 도구 정의
+- `docs/plan.md` — Phase 1~3B 개발 체크리스트
+- `docs/current-task.md` — 현재 진행 상태 (Phase 3A 완료)
+- `docs/architecture.md` — 전체 아키텍처 가이드 (14개 섹션, 비기술자용)
+
+## 대화 스타일
+
+- 준수님은 한국어로 소통, 코드/변수명은 영어
+- 비전공자이므로 기술 설명 시 비유와 예시 활용
+- 실행력이 높으므로 Claude Code에 바로 복붙할 수 있는 형태로 제공
+- 모든 AI 도구 추가는 반드시 5-step 패턴을 따름
+- Phase 단위로 작업, 한 번에 하나씩
