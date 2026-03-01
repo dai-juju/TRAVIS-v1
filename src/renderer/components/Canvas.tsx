@@ -8,17 +8,22 @@ import WebviewCard from './WebviewCard'
 import EdgeLayer from './EdgeLayer'
 import type { CardData, WebviewData } from '../types'
 
+// 무한 캔버스 컴포넌트 — AI가 생성한 카드와 웹뷰가 배치되는 드래그 가능한 작업 공간
+// 마우스로 캔버스를 드래그하여 이동하고, 스크롤로 확대/축소 가능
 export default function Canvas() {
+  // viewport: 캔버스의 현재 위치(x, y)와 확대 수준(zoom)
   const viewport = useCanvasStore((s) => s.viewport)
   const setViewport = useCanvasStore((s) => s.setViewport)
+  // cards: 캔버스에 표시된 모든 카드/웹뷰 목록
   const cards = useCanvasStore((s) => s.cards)
   const clearPins = useCanvasStore((s) => s.clearPins)
   const containerRef = useRef<HTMLDivElement>(null)
+  // 캔버스 이동(패닝) 관련 상태 추적용 변수들
   const isPanning = useRef(false)
   const didPan = useRef(false)
   const panStart = useRef({ x: 0, y: 0 })
 
-  // --- Pan ---
+  // --- 캔버스 이동(패닝) --- 마우스 왼쪽 버튼을 누른 채 드래그하면 캔버스가 이동
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     // 카드 위에서 시작된 이벤트는 무시 (카드가 stopPropagation 처리)
     if (e.button !== 0) return
@@ -28,6 +33,7 @@ export default function Canvas() {
     panStart.current = { x: e.clientX - x, y: e.clientY - y }
   }, [])
 
+  // 마우스 이동 시 캔버스 위치 업데이트
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isPanning.current) return
     didPan.current = true
@@ -47,7 +53,7 @@ export default function Canvas() {
     didPan.current = false
   }, [clearPins])
 
-  // --- Zoom (non-passive listener for preventDefault) ---
+  // --- 확대/축소(줌) --- 마우스 휠로 캔버스를 확대하거나 축소 (최소 0.1배 ~ 최대 3배)
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
@@ -102,8 +108,10 @@ export default function Canvas() {
         {/* Edge layer — 카드 아래에 렌더링 */}
         <EdgeLayer />
 
+        {/* 카드 목록 렌더링 — 각 카드를 생성 애니메이션과 함께 표시 */}
         <AnimatePresence mode="popLayout">
           {cards.map((item) => {
+            // 일반 정보 카드 (텍스트/마크다운 형태)
             if (item.type === 'card') {
               const cardData = item as CardData
               return (
@@ -119,6 +127,7 @@ export default function Canvas() {
                 </SpawnAnimation>
               )
             }
+            // 웹뷰 카드 (외부 웹사이트를 캔버스에 직접 임베드)
             if (item.type === 'webview') {
               const webviewData = item as WebviewData
               return (

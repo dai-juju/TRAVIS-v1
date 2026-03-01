@@ -5,25 +5,33 @@ import { useCanvasStore } from '../stores/useCanvasStore'
 import { sendMessage } from '../services/claude'
 import SettingsModal from './SettingsModal'
 
+// 오른쪽 AI 채팅 패널 — 사용자가 자연어로 질문하면 AI가 응답하고 카드/웹뷰를 생성
 export default function ChatPanel() {
+  // messages: 대화 기록 목록
   const messages = useChatStore((s) => s.messages)
+  // isLoading: AI가 응답을 생성 중인지 여부
   const isLoading = useChatStore((s) => s.isLoading)
   const setLoading = useChatStore((s) => s.setLoading)
+  // streamingMessageId: 현재 스트리밍 중인 AI 응답의 ID (타이핑 효과 표시용)
   const streamingMessageId = useChatStore((s) => s.streamingMessageId)
+  // focusedCard: 현재 채팅에서 참조하고 있는 카드 (카드 내용 클릭 시 설정)
   const focusedCard = useChatStore((s) => s.focusedCard)
   const clearFocusedCard = useChatStore((s) => s.clearFocusedCard)
   const [input, setInput] = useState('')
+  // settingsOpen: 설정 모달이 열려있는지 여부
   const [settingsOpen, setSettingsOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // 새 메시지 시 자동 스크롤
+  // 새 메시지가 추가되면 자동으로 맨 아래로 스크롤하여 최신 대화가 보이게 함
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading])
 
+  // AI에게 메시지를 전송하고 응답을 받는 핵심 함수
+  // API 키가 없으면 설정 모달을 열고, 있으면 Claude AI에게 메시지 전송
   const handleSendWithMessage = useCallback(async (msg: string) => {
-    const { apiKey, model, contextPrompt, tavilyApiKey } = useSettingsStore.getState()
+    const { apiKey, model, contextPrompt, tavilyApiKey, cmcApiKey } = useSettingsStore.getState()
     if (!apiKey) {
       setSettingsOpen(true)
       return
@@ -50,6 +58,7 @@ export default function ChatPanel() {
         model,
         contextPrompt,
         tavilyApiKey,
+        cmcApiKey,
         canvasCards,
         focusedCard: useChatStore.getState().focusedCard ?? undefined,
       })
@@ -61,6 +70,7 @@ export default function ChatPanel() {
     }
   }, [setLoading])
 
+  // 전송 버튼 클릭 또는 Enter 키 시 실행 — 입력 내용을 AI에게 전송
   const handleSend = useCallback(async () => {
     const trimmed = input.trim()
     if (!trimmed || isLoading) return
@@ -73,6 +83,7 @@ export default function ChatPanel() {
     await handleSendWithMessage(trimmed)
   }, [input, isLoading, handleSendWithMessage])
 
+  // Enter 키 입력 시 메시지 전송 (Shift+Enter는 줄바꿈)
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -80,6 +91,7 @@ export default function ChatPanel() {
     }
   }
 
+  // 텍스트 입력 시 내용 업데이트 및 텍스트 영역 높이 자동 조절
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value)
     const el = e.target

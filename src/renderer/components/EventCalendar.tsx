@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import type { FeedCategory, FeedImportance } from '../types'
 
+// 캘린더 이벤트 데이터 구조 — 날짜, 제목, 카테고리, 중요도
 interface CalendarEvent {
   date: string // 'YYYY-MM-DD'
   title: string
@@ -25,6 +26,7 @@ const IMPORTANCE_COLOR: Record<FeedImportance, string> = {
   info: '#6b7280',
 }
 
+// 주요 경제 이벤트 목록 — FOMC 회의, CPI 발표, 고용지표 등 트레이더가 반드시 알아야 할 일정
 const HARDCODED_EVENTS: CalendarEvent[] = [
   // 2025 FOMC
   { date: '2025-06-18', title: 'FOMC Meeting', category: 'macro', importance: 'critical' },
@@ -79,8 +81,12 @@ function formatDateKey(year: number, month: number, day: number): string {
   return `${year}-${pad(month + 1)}-${pad(day)}`
 }
 
+// 이벤트 캘린더 컴포넌트 — 월별 달력에 경제/크립토 주요 이벤트를 색상 점으로 표시
+// 날짜 클릭 시 해당 날짜의 이벤트 목록을 하단에 표시
 export default function EventCalendar() {
+  // currentDate: 현재 보고 있는 월 (화살표로 이전/다음 월 이동 가능)
   const [currentDate, setCurrentDate] = useState(() => new Date())
+  // selectedDay: 사용자가 클릭한 날짜 (이벤트 상세 보기용)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
 
   const year = currentDate.getFullYear()
@@ -89,7 +95,7 @@ export default function EventCalendar() {
   const today = new Date()
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month
 
-  // Build event lookup for this month
+  // 현재 월의 이벤트를 날짜별로 그룹화하여 빠르게 조회할 수 있도록 매핑
   const eventsByDay = useMemo(() => {
     const map = new Map<number, CalendarEvent[]>()
     const prefix = `${year}-${pad(month + 1)}-`
@@ -103,7 +109,7 @@ export default function EventCalendar() {
     return map
   }, [year, month])
 
-  // Calendar grid
+  // 달력 그리드 생성 — 42칸 (6주 x 7일)으로 이전 월/현재 월/다음 월 날짜 채움
   const firstDayOfMonth = new Date(year, month, 1).getDay()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const daysInPrevMonth = new Date(year, month, 0).getDate()
@@ -124,6 +130,7 @@ export default function EventCalendar() {
     cells.push({ day: d, isCurrentMonth: false })
   }
 
+  // 이전 월/다음 월로 이동하는 버튼 핸들러
   const prevMonth = () => {
     setCurrentDate(new Date(year, month - 1, 1))
     setSelectedDay(null)

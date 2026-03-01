@@ -1,10 +1,12 @@
 import { useCanvasStore } from '../stores/useCanvasStore'
 import type { EdgeData, CardData } from '../types'
 
+// edge: 두 카드를 잇는 연결선 데이터
 interface NodeEdgeProps {
   edge: EdgeData
 }
 
+// 카드 종류별 연결선 색상 — 출발 카드의 종류에 따라 선 색상 결정
 function getAccentColor(cardType?: string): string {
   switch (cardType) {
     case 'price': return '#22d3ee'
@@ -17,6 +19,8 @@ function getAccentColor(cardType?: string): string {
   }
 }
 
+// 개별 연결선 컴포넌트 — 두 카드 사이의 관계를 선으로 표시
+// 강한 관계는 굵은 실선, 약한 관계는 가는 실선, 추측 관계는 점선으로 표시
 export default function NodeEdge({ edge }: NodeEdgeProps) {
   const cards = useCanvasStore((s) => s.cards)
   const hoveredNodeId = useCanvasStore((s) => s.hoveredNodeId)
@@ -34,7 +38,7 @@ export default function NodeEdge({ edge }: NodeEdgeProps) {
   const x2 = toNode.x + toNode.width / 2
   const y2 = toNode.y + toNode.height / 2
 
-  // Visibility 로직
+  // 연결선 표시 조건 — 마우스를 올린 카드, 고정된 카드, 또는 전체 표시 모드일 때만 보임
   const isHovered =
     hoveredNodeId === edge.fromNodeId || hoveredNodeId === edge.toNodeId
   const isPinned =

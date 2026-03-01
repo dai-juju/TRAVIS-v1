@@ -420,3 +420,96 @@ Edge: {
 - No paid data source APIs (Glassnode, Nansen, Bloomberg) — Phase 3
 - No X/Twitter API integration — Phase 3
 - No Telegram/Discord bot monitoring — Phase 3
+
+---
+
+# PHASE 3A: AI TOOL ARSENAL + PERCEIVED SPEED (COMPLETE ✅)
+
+## 19. AI Tool System (17 Tools)
+
+Phase 3A expanded Claude's tool arsenal from 7 to 17, enabling real data queries instead of training-data guessing.
+
+### 19.1 Dynamic Symbol Resolution
+- CoinGecko /search API for resolving any coin (symbol, name, Korean name)
+- Session cache (Map) to avoid redundant lookups
+- Korean coin name mapping (비트코인→BTC, 이더리움→ETH, etc.)
+- Removed KNOWN_SYMBOLS hardcoding
+
+### 19.2 Data Tools (8 tools)
+```typescript
+// 코인 종합 데이터 — CoinGecko + Binance + optional Futures + optional CMC
+fetch_coin_data: { query: string, include_futures?: boolean }
+
+// 시장 전체 현황 — 글로벌 메트릭 + Fear&Greed + Top gainers/losers + optional CMC
+fetch_market_overview: {}
+
+// 선물 파생상품 — Binance Futures 8개 API
+fetch_derivatives_data: { symbol: string }
+// Returns: funding rate, OI, global long/short, top trader L/S, taker buy/sell, OI history, liquidations
+
+// 고래 거래 — 대형 체결 + 호가벽
+fetch_whale_activity: { symbol?: string }
+
+// 트렌딩 — CoinGecko trending coins/NFT/categories
+fetch_trending: {}
+
+// 특정 거래소 가격 — CCXT 6거래소
+fetch_exchange_price: { exchange: string, symbol: string }
+
+// 멀티 거래소 비교 + 김치 프리미엄
+compare_exchange_prices: { symbol: string, mode?: 'compare'|'kimchi', exchanges?: string[] }
+
+// 웹 검색 — Tavily API
+search_web: { query: string }
+```
+
+### 19.3 Display Tools (7 tools)
+```typescript
+spawn_card: { title, content, cardType?, symbol?, images?, relatedTo? }
+spawn_webview: { url, title, width?, height? }
+spawn_multiple_cards: { cards: [{title, content, cardType?, symbol?}], webviews?: [{url, title}] }
+remove_cards: { target: 'all' | cardId }
+rearrange: { layout: 'grid' | 'stack' }
+update_card: { cardId, content }
+control_webview: { webviewId, action: 'navigate'|'resize'|'tv_change_symbol'|'tv_change_interval', url?, symbol?, interval?, width?, height? }
+```
+
+### 19.4 Analysis Tools (2 tools)
+```typescript
+open_investigation: { cardId: string }
+update_investigation: { action: 'add_panel'|'remove_panel'|'update_panel'|'reorder_panels'|'reset_panels', panelId?, panel?, panelIds? }
+```
+
+## 20. CCXT 6-Exchange Integration
+- Exchanges: Binance, Upbit, Bybit, Bithumb, OKX, Coinbase
+- REST: fetchTicker, fetchOrderBook via CCXT unified API
+- WebSocket: CCXT Pro with lazy connection + 5min idle disconnect
+- 김치 프리미엄: Upbit KRW vs Binance USDT × exchange rate
+
+## 21. CoinMarketCap (Supplementary)
+- Optional API key in Settings
+- Augments fetch_coin_data: rank, tags, percentChange1h/30d, dateAdded, platform
+- Augments fetch_market_overview: DeFi volume/mcap, stablecoin volume/mcap, total exchanges
+- Failure never affects primary CoinGecko data
+
+## 22. Perceived Speed Improvements
+- **Skeleton Cards**: spawn_card immediately creates skeleton (shimmer animation) → content fills after data arrives
+- **SSE Timeout**: 60s no-event → auto-disconnect + error message
+- **Tool Timeout**: 30s per tool execution
+- **Sound Feedback**: Web Audio API — boot complete, card spawn, AI response sounds
+- **fetchWithRetry**: Exponential backoff for CoinGecko API (3 retries)
+- **Multi-turn**: MAX_TOOL_TURNS = 25
+
+## 23. Investigation Mode Dynamic Panels
+- AI can add/remove/update/reorder panels via update_investigation tool
+- Dynamic grid: 1-3 columns based on panel count
+- Dynamic panels get cyan border + remove button
+- Panel sizes: small, normal, large (grid span)
+
+## 24. Webview Control
+- control_webview tool with 4 actions:
+  - navigate: Change URL (store update + loadURL)
+  - resize: Change dimensions
+  - tv_change_symbol: TradingView chart symbol change
+  - tv_change_interval: TradingView chart timeframe change
+- webviewRefs Map for DOM element access

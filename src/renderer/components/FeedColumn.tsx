@@ -3,15 +3,18 @@ import { useFeedStore } from '../stores/useFeedStore'
 import FeedItem from './FeedItem'
 import type { FeedCategory } from '../types'
 
+// category: 뉴스 카테고리, label: 표시 이름, color: 카테고리 색상
 interface FeedColumnProps {
   category: FeedCategory
   label: string
   color: string
 }
 
+// 단일 카테고리 열 컴포넌트 — 특정 카테고리(예: MACRO)에 해당하는 뉴스만 필터링하여 세로로 표시
 export default function FeedColumn({ category, label, color }: FeedColumnProps) {
   const items = useFeedStore((s) => s.items)
 
+  // 전체 피드에서 이 카테고리에 해당하는 뉴스만 필터링
   const categoryItems = useMemo(
     () => items.filter((item) => item.category === category),
     [items, category]

@@ -8,10 +8,13 @@ import { useChatStore } from '../stores/useChatStore'
 import LatencyIndicator from './LatencyIndicator'
 import type { CardData } from '../types'
 
+// card: 카드 데이터 (제목, 내용, 심볼, 위치 등 포함)
 interface CardProps {
   card: CardData
 }
 
+// 단일 정보 카드 컴포넌트 — AI가 생성한 정보를 표시하는 카드
+// 실시간 가격 표시, 드래그 이동, 크기 조절, 더블클릭으로 심층 분석 모드 진입 가능
 export default function Card({ card }: CardProps) {
   const updateCardPosition = useCanvasStore((s) => s.updateCardPosition)
   const updateCardSize = useCanvasStore((s) => s.updateCardSize)
@@ -20,10 +23,13 @@ export default function Card({ card }: CardProps) {
   const togglePinNode = useCanvasStore((s) => s.togglePinNode)
   const openInvestigation = useInvestigationStore((s) => s.open)
 
+  // 실시간 가격 데이터 구독/해제 함수
   const subscribe = useRealtimeStore((s) => s.subscribe)
   const unsubscribe = useRealtimeStore((s) => s.unsubscribe)
+  // ticker: 이 카드에 연결된 코인의 실시간 가격/변동률/거래량 데이터
   const ticker = useRealtimeStore((s) => card.symbol ? s.tickers[card.symbol.toUpperCase()] : undefined)
 
+  // flash: 가격 변동 시 짧게 초록/빨강으로 반짝이는 효과
   const [flash, setFlash] = useState<'up' | 'down' | null>(null)
 
   const isDragging = useRef(false)
@@ -32,15 +38,16 @@ export default function Card({ card }: CardProps) {
   const dragStart = useRef({ x: 0, y: 0, cardX: 0, cardY: 0 })
   const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0 })
 
-  // 실시간 데이터 구독
+  // 카드에 코인 심볼이 있으면 실시간 가격 데이터를 바이낸스에서 구독
   useEffect(() => {
     if (!card.symbol) return
     const sym = card.symbol.toUpperCase()
     subscribe(sym)
+    // 카드가 사라질 때 구독 해제하여 불필요한 데이터 수신 방지
     return () => unsubscribe(sym)
   }, [card.symbol, subscribe, unsubscribe])
 
-  // 가격 변동 플래시
+  // 가격이 변할 때마다 0.5초간 초록(상승) 또는 빨강(하락) 깜빡임 효과 표시
   useEffect(() => {
     if (!ticker || ticker.prevPrice === ticker.price) return
     setFlash(ticker.price > ticker.prevPrice ? 'up' : 'down')
@@ -48,7 +55,7 @@ export default function Card({ card }: CardProps) {
     return () => clearTimeout(timer)
   }, [ticker?.price, ticker?.prevPrice])
 
-  // --- Drag ---
+  // --- 카드 드래그 이동 --- 카드 헤더를 마우스로 잡아 이동 가능
   const handleDragStart = useCallback(
     (e: React.MouseEvent) => {
       if (e.button !== 0) return
@@ -88,7 +95,7 @@ export default function Card({ card }: CardProps) {
     [card.id, card.x, card.y, updateCardPosition]
   )
 
-  // --- Resize ---
+  // --- 카드 크기 조절 --- 카드 우하단 모서리를 드래그하여 크기 변경
   const handleResizeStart = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
@@ -125,14 +132,16 @@ export default function Card({ card }: CardProps) {
     [card.id, card.width, card.height, updateCardSize]
   )
 
+  // 카드 헤더 클릭 — 연결선(엣지)을 고정 표시할지 토글 (드래그 후에는 무시)
   const handleHeaderClick = useCallback(() => {
-    // 드래그 후에는 pin 토글하지 않음
     if (didDrag.current) return
     togglePinNode(card.id)
   }, [card.id, togglePinNode])
 
+  // 현재 채팅에서 참조 중인 카드인지 확인 (참조 중이면 보라색 테두리 표시)
   const focusedCardId = useChatStore((s) => s.focusedCard?.id)
   const isFocused = focusedCardId === card.id
+  // 카드 종류(가격/분석/뉴스 등)에 따른 강조 색상 결정
   const accentColor = getAccentColor(card.cardType)
 
   return (
@@ -203,35 +212,52 @@ export default function Card({ card }: CardProps) {
         </div>
       )}
 
-      {/* Content */}
-      <div
-        className="flex-1 overflow-y-auto px-3 py-2 card-markdown text-sm text-t2 cursor-pointer"
-        onClick={() => useChatStore.getState().setFocusedCard({
-          id: card.id, title: card.title, content: card.content
-        })}
-      >
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{card.content}</ReactMarkdown>
+      {/* 카드 내용 — isLoading이면 스켈레톤, 아니면 실제 콘텐츠 */}
+      {card.isLoading ? (
+        <div className="flex-1 px-3 py-3 space-y-2">
+          {[80, 60, 90, 40].map((w, i) => (
+            <div
+              key={i}
+              className="h-3 rounded animate-pulse"
+              style={{
+                width: `${w}%`,
+                backgroundColor: 'rgba(255,255,255,0.07)',
+                animationDelay: `${i * 0.15}s`,
+                animationDuration: '1.5s',
+              }}
+            />
+          ))}
+        </div>
+      ) : (
+        <div
+          className="flex-1 overflow-y-auto px-3 py-2 card-markdown text-sm text-t2 cursor-pointer"
+          onClick={() => useChatStore.getState().setFocusedCard({
+            id: card.id, title: card.title, content: card.content
+          })}
+        >
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{card.content}</ReactMarkdown>
 
-        {card.images && card.images.length > 0 && (
-          <div className="mt-2 space-y-2">
-            {card.images.map((img, i) => (
-              <figure key={i}>
-                <img
-                  src={img.url}
-                  alt={img.caption || ''}
-                  className="w-full rounded border border-white/5"
-                  loading="lazy"
-                />
-                {img.caption && (
-                  <figcaption className="text-xs text-t3 mt-1">
-                    {img.caption}
-                  </figcaption>
-                )}
-              </figure>
-            ))}
-          </div>
-        )}
-      </div>
+          {card.images && card.images.length > 0 && (
+            <div className="mt-2 space-y-2">
+              {card.images.map((img, i) => (
+                <figure key={i}>
+                  <img
+                    src={img.url}
+                    alt={img.caption || ''}
+                    className="w-full rounded border border-white/5"
+                    loading="lazy"
+                  />
+                  {img.caption && (
+                    <figcaption className="text-xs text-t3 mt-1">
+                      {img.caption}
+                    </figcaption>
+                  )}
+                </figure>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Resize handle */}
       <div
@@ -246,6 +272,7 @@ export default function Card({ card }: CardProps) {
   )
 }
 
+// 카드 종류별 강조 색상 반환 — 가격은 시안, 분석은 보라, 뉴스는 주황 등
 function getAccentColor(cardType?: string): string {
   switch (cardType) {
     case 'price':
@@ -265,6 +292,7 @@ function getAccentColor(cardType?: string): string {
   }
 }
 
+// 거래량 숫자를 읽기 쉬운 형태로 변환 (예: 1,500,000 → 1.5M)
 function formatVolume(vol: number): string {
   if (vol >= 1e9) return (vol / 1e9).toFixed(1) + 'B'
   if (vol >= 1e6) return (vol / 1e6).toFixed(1) + 'M'

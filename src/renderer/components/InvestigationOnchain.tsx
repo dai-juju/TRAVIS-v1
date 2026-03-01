@@ -1,24 +1,27 @@
+// 코인 온체인 데이터 구조 — 시가총액, 거래량, 공급량, 사상 최고/최저가, 가격 변동률 등
 interface CoinData {
-  name: string
-  symbol: string
-  marketCap: number
-  volume24h: number
-  circulatingSupply: number
-  totalSupply: number | null
-  maxSupply: number | null
-  ath: number
-  athDate: string
-  atl: number
-  atlDate: string
-  priceChange24h: number
-  priceChange7d: number
-  priceChange30d: number
+  name: string                  // 코인 이름 (예: Bitcoin)
+  symbol: string                // 코인 심볼 (예: BTC)
+  marketCap: number             // 시가총액
+  volume24h: number             // 24시간 거래량
+  circulatingSupply: number     // 유통 공급량
+  totalSupply: number | null    // 총 공급량
+  maxSupply: number | null      // 최대 공급량
+  ath: number                   // 사상 최고가 (All-Time High)
+  athDate: string               // 사상 최고가 달성 날짜
+  atl: number                   // 사상 최저가 (All-Time Low)
+  atlDate: string               // 사상 최저가 달성 날짜
+  priceChange24h: number        // 24시간 가격 변동률 (%)
+  priceChange7d: number         // 7일 가격 변동률 (%)
+  priceChange30d: number        // 30일 가격 변동률 (%)
 }
 
+// data: 온체인 데이터
 interface Props {
   data: CoinData
 }
 
+// 큰 금액을 읽기 쉬운 형태로 변환 (예: 1조 → $1.00T, 10억 → $1.00B)
 function formatLarge(n: number | null | undefined): string {
   if (n == null) return 'N/A'
   if (n >= 1e12) return '$' + (n / 1e12).toFixed(2) + 'T'
@@ -28,6 +31,7 @@ function formatLarge(n: number | null | undefined): string {
   return '$' + n.toFixed(2)
 }
 
+// 공급량 숫자를 읽기 쉬운 형태로 변환 (예: 21000000 → 21.00M)
 function formatSupply(n: number | null | undefined): string {
   if (n == null) return 'N/A'
   if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B'
@@ -45,12 +49,14 @@ function formatDate(dateStr: string): string {
   }
 }
 
+// 가격 변동률 표시 — 상승은 초록, 하락은 빨강으로 표시
 function ChangeValue({ value }: { value: number }) {
   const color = value >= 0 ? '#22c55e' : '#ef4444'
   const prefix = value >= 0 ? '+' : ''
   return <span style={{ color }}>{prefix}{value.toFixed(2)}%</span>
 }
 
+// 데이터 행 — 왼쪽에 항목명, 오른쪽에 값을 표시하는 단일 행
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between py-1 border-b border-white/[0.03]">
@@ -60,6 +66,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   )
 }
 
+// 온체인 데이터 패널 — 심층 분석 모드에서 시가총액, 거래량, 공급량, 최고/최저가, 변동률을 섹션별로 표시
 export default function InvestigationOnchain({ data }: Props) {
   if (!data) {
     return (

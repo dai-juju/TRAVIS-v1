@@ -20,17 +20,21 @@ const TRADITIONAL_ASSETS = [
   { symbol: 'OIL', label: 'OIL' },
 ]
 
+// 티커 아이템의 속성 정의
 interface TickerItemProps {
-  symbol: string
-  label: string
-  price: number | null
-  change: number | null
-  isCrypto: boolean
+  symbol: string    // 자산 심볼 (예: BTCUSDT)
+  label: string     // 표시 이름 (예: BTC)
+  price: number | null   // 현재 가격
+  change: number | null  // 24시간 변동률 (%)
+  isCrypto: boolean      // 크립토 자산인지 여부
 }
 
+// 개별 티커 아이템 컴포넌트 — 하단 가격 스크롤에서 각 자산 한 칸을 표시
+// 클릭하면 해당 자산의 가격 카드를 캔버스에 생성
 function TickerItem({ symbol, label, price, change, isCrypto }: TickerItemProps) {
   const addCard = useCanvasStore((s) => s.addCard)
 
+  // 티커 클릭 시 해당 자산의 가격 추적 카드를 캔버스에 새로 생성
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
 
@@ -91,6 +95,8 @@ interface KimchiData {
   premiumPercent: number
 }
 
+// 김프(김치 프리미엄) 표시기 — 한국 거래소와 글로벌 거래소 간 가격 차이를 퍼센트로 표시
+// 3% 이상이면 빨강(위험), 1% 이상이면 노랑(주의), 그 이하면 초록(정상)
 function KimchiIndicator({ data }: { data: KimchiData[] }) {
   if (data.length === 0) return null
   // Show BTC premium as the representative value
@@ -109,6 +115,8 @@ function KimchiIndicator({ data }: { data: KimchiData[] }) {
   )
 }
 
+// 하단 가격 티커 컴포넌트 — BTC, ETH, SOL 등 주요 자산 가격이 좌우로 무한 스크롤
+// 크립토는 바이낸스 WebSocket 실시간, 전통자산은 60초 간격으로 업데이트
 export default function PriceTicker() {
   const subscribe = useRealtimeStore((s) => s.subscribe)
   const unsubscribe = useRealtimeStore((s) => s.unsubscribe)
@@ -129,25 +137,25 @@ export default function PriceTicker() {
       if (!api?.getTradFiQuotes) return
       const quotes = await api.getTradFiQuotes()
       if (quotes) setTradFiPrices(quotes)
-    } catch {
-      // 실패 시 기존 데이터 유지
+    } catch (err) {
+      console.warn('[PriceTicker] Failed to fetch TradFi quotes:', err)
     }
   }, [])
 
-  // 크립토 심볼 구독 (BTCUSDT 형식)
+  // 크립토 심볼 구독 — 바이낸스 WebSocket으로 BTC, ETH 등 실시간 가격 수신 시작
   useEffect(() => {
     CRYPTO_TICKERS.forEach(({ symbol }) => subscribe(symbol))
     return () => CRYPTO_TICKERS.forEach(({ symbol }) => unsubscribe(symbol))
   }, [subscribe, unsubscribe])
 
-  // 전통자산 60초 폴링
+  // 전통자산(S&P 500, NASDAQ 등) 60초마다 가격 갱신
   useEffect(() => {
     fetchTradFi()
     const interval = setInterval(fetchTradFi, 60_000)
     return () => clearInterval(interval)
   }, [fetchTradFi])
 
-  // 김프 60초 폴링
+  // 김치 프리미엄 데이터 60초마다 갱신 — 한국 거래소 vs 글로벌 거래소 가격 차이
   const fetchKimchi = useCallback(async () => {
     try {
       const api = (window as any).api
@@ -157,8 +165,8 @@ export default function PriceTicker() {
         const entries = Object.values(result) as KimchiData[]
         setKimchiData(entries)
       }
-    } catch {
-      // 실패 시 기존 데이터 유지
+    } catch (err) {
+      console.warn('[PriceTicker] Failed to fetch Kimchi premium:', err)
     }
   }, [])
 

@@ -1,28 +1,34 @@
+// 개별 대량 거래 데이터 구조
 interface TradeData {
-  id: number
-  price: string
-  qty: string
-  quoteQty: string
-  time: number
-  isBuyerMaker: boolean
+  id: number           // 거래 ID
+  price: string        // 체결 가격
+  qty: string          // 체결 수량
+  quoteQty: string     // 거래 금액 (USD 기준)
+  time: number         // 거래 시간 (타임스탬프)
+  isBuyerMaker: boolean // true면 매도, false면 매수
 }
 
+// data: 고래 거래 데이터 (대량 거래 목록과 거래 페어), symbol: 코인 심볼
 interface Props {
   data: { trades: TradeData[]; pair?: string }
   symbol: string
 }
 
+// 큰 숫자를 간략하게 표시 (예: 1,500,000 → 1.50M)
 function formatCompact(n: number): string {
   if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M'
   if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K'
   return n.toFixed(2)
 }
 
+// 타임스탬프를 시:분:초 형식으로 변환
 function formatTime(ts: number): string {
   const d = new Date(ts)
   return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
 }
 
+// 고래 거래 패널 — 심층 분석 모드에서 $100K 이상의 대량 거래(고래 거래)를 테이블로 표시
+// 시간, 가격, 수량, 금액, 매수/매도 방향을 색상으로 구분하여 보여줌
 export default function InvestigationWhale({ data, symbol }: Props) {
   const trades = data?.trades ?? []
   const pair = data?.pair

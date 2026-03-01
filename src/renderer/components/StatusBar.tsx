@@ -1,12 +1,14 @@
 import { useRealtimeStore } from '../stores/useRealtimeStore'
 
+// 연결 상태별 표시 설정 — 색상과 텍스트
 const STATUS_CONFIG = {
-  connected: { color: '#22c55e', text: 'Connected to Binance' },
-  connecting: { color: '#eab308', text: 'Connecting...' },
-  reconnecting: { color: '#eab308', text: 'Reconnecting...' },
-  disconnected: { color: '#6b7280', text: 'Disconnected' },
+  connected: { color: '#22c55e', text: 'Connected to Binance' },       // 초록: 연결됨
+  connecting: { color: '#eab308', text: 'Connecting...' },             // 노랑: 연결 시도 중
+  reconnecting: { color: '#eab308', text: 'Reconnecting...' },        // 노랑: 재연결 중
+  disconnected: { color: '#6b7280', text: 'Disconnected' },           // 회색: 연결 끊김
 } as const
 
+// 하단 상태 바 컴포넌트 — 바이낸스 WebSocket 연결 상태를 색상 점과 텍스트로 표시
 export default function StatusBar() {
   const connectionStatus = useRealtimeStore((s) => s.connectionStatus)
   const config = STATUS_CONFIG[connectionStatus]

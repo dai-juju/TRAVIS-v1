@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 import { useFeedStore } from '../stores/useFeedStore'
 import FeedItem from './FeedItem'
 
+// 코인별 키워드 매핑 — 뉴스 제목에서 관련 코인을 찾기 위한 키워드 목록
+// 예: "BTC" → "bitcoin", "btc"로 검색
 const COIN_KEYWORDS: Record<string, string[]> = {
   BTC: ['bitcoin', 'btc'],
   ETH: ['ethereum', 'eth', 'ether'],
@@ -27,13 +29,16 @@ const COIN_KEYWORDS: Record<string, string[]> = {
   OKB: ['okx', 'okb'],
 }
 
+// symbol: 분석 대상 코인 심볼
 interface Props {
   symbol: string
 }
 
+// 관련 뉴스 패널 — 심층 분석 모드에서 분석 대상 코인과 관련된 뉴스만 필터링하여 표시 (최대 20건)
 export default function InvestigationNews({ symbol }: Props) {
   const items = useFeedStore((s) => s.items)
 
+  // 키워드 매칭으로 해당 코인 관련 뉴스를 필터링 (제목 + 요약에서 검색)
   const filteredItems = useMemo(() => {
     const keywords = COIN_KEYWORDS[symbol.toUpperCase()] ?? [symbol.toLowerCase()]
     return items

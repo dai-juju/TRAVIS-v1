@@ -3,6 +3,7 @@ import { useFeedStore } from '../stores/useFeedStore'
 import FeedItem from './FeedItem'
 import type { FeedCategory } from '../types'
 
+// 모든 뉴스 카테고리 정의 — 카테고리별 이름과 색상
 const ALL_CATEGORIES: { key: FeedCategory; label: string; color: string }[] = [
   { key: 'macro',    label: 'MACRO',    color: '#f59e0b' },
   { key: 'crypto',   label: 'CRYPTO',   color: '#a855f7' },
@@ -13,14 +14,19 @@ const ALL_CATEGORIES: { key: FeedCategory; label: string; color: string }[] = [
   { key: 'world',    label: 'WORLD',    color: '#ec4899' },
 ]
 
+// FEED 탭 오른쪽 사이드바 — 전체 뉴스 피드를 검색 및 카테고리 필터링하여 표시
+// 상단에 검색창과 카테고리 필터 칩, 하단에 스크롤 가능한 뉴스 목록
 export default function FeedSidebar() {
   const items = useFeedStore((s) => s.items)
+  // selectedCategories: 선택된 카테고리 필터 (비어있으면 전체 표시)
   const [selectedCategories, setSelectedCategories] = useState<Set<FeedCategory>>(new Set())
+  // searchTerm: 뉴스 제목 검색어
   const [searchTerm, setSearchTerm] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
   const isHovered = useRef(false)
   const prevCountRef = useRef(0)
 
+  // 카테고리 필터 칩 클릭 시 — 해당 카테고리 선택/해제 토글
   const toggleCategory = (cat: FeedCategory) => {
     setSelectedCategories((prev) => {
       const next = new Set(prev)
@@ -30,6 +36,7 @@ export default function FeedSidebar() {
     })
   }
 
+  // 검색어와 카테고리 필터에 맞는 뉴스만 걸러내기
   const filteredItems = useMemo(() => {
     const term = searchTerm.toLowerCase()
     return items.filter((item) => {
@@ -39,7 +46,7 @@ export default function FeedSidebar() {
     })
   }, [items, selectedCategories, searchTerm])
 
-  // Auto-scroll on new items
+  // 새 뉴스가 도착하면 자동으로 맨 위로 스크롤 (사용자가 읽고 있을 때는 방해하지 않음)
   useEffect(() => {
     if (filteredItems.length > prevCountRef.current && !isHovered.current && scrollRef.current) {
       scrollRef.current.scrollTop = 0

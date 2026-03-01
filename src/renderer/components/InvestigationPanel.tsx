@@ -8,18 +8,21 @@ import InvestigationWhale from './InvestigationWhale'
 import InvestigationOnchain from './InvestigationOnchain'
 import InvestigationSector from './InvestigationSector'
 
+// panel: 패널 데이터, index: 패널 순서 (애니메이션 딜레이용), isMain: 메인 패널 여부
 interface InvestigationPanelProps {
   panel: PanelState
   index: number
   isMain: boolean
 }
 
+// 패널 태그 색상 — STREAM(실시간 데이터), CLAUDE(AI 분석), LOCAL(로컬 데이터)
 const TAG_COLORS: Record<string, { bg: string; text: string }> = {
   STREAM: { bg: 'rgba(34,211,238,0.15)', text: '#22d3ee' },
   CLAUDE: { bg: 'rgba(168,85,247,0.15)', text: '#a855f7' },
   LOCAL: { bg: 'rgba(107,114,128,0.15)', text: '#94a3b8' },
 }
 
+// 로딩 스피너 — 패널 데이터를 불러오는 중일 때 표시
 function LoadingSpinner() {
   return (
     <div className="flex items-center justify-center h-full gap-2">
@@ -29,6 +32,7 @@ function LoadingSpinner() {
   )
 }
 
+// 에러 메시지 — 패널 데이터 로딩 실패 시 표시
 function ErrorMessage({ msg }: { msg: string }) {
   return (
     <div className="flex items-center justify-center h-full px-4">
@@ -41,6 +45,8 @@ function ErrorMessage({ msg }: { msg: string }) {
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// 패널 종류에 따라 적절한 콘텐츠 컴포넌트를 렌더링하는 분기 처리
+// chart: 트레이딩뷰 차트, news: 관련 뉴스, whale: 고래 거래, onchain: 온체인 데이터, sector: 섹터 비교
 function PanelContent({ panel, symbol }: { panel: PanelState; symbol: string }) {
   switch (panel.panelType) {
     case 'chart':
@@ -63,21 +69,31 @@ function PanelContent({ panel, symbol }: { panel: PanelState; symbol: string }) 
   }
 }
 
+// 동적 패널인지 확인 (기본 6패널이 아닌 AI가 추가한 패널)
+const DEFAULT_PANEL_IDS = new Set(['overview', 'chart', 'news', 'whale', 'onchain', 'sector', 'main'])
+
+// 심층 분석 개별 패널 컴포넌트 — 제목, 태그, 접기/최대화 버튼이 있는 패널 프레임
+// 내부에 패널 종류별 콘텐츠(차트/뉴스/고래 등)를 렌더링
 export default function InvestigationPanel({ panel, index, isMain }: InvestigationPanelProps) {
   const toggleMaximize = useInvestigationStore((s) => s.toggleMaximize)
   const toggleFold = useInvestigationStore((s) => s.toggleFold)
+  const removePanel = useInvestigationStore((s) => s.removePanel)
   const targetSymbol = useInvestigationStore((s) => s.targetCard?.symbol?.toUpperCase() ?? '')
 
   const tagStyle = TAG_COLORS[panel.tag] || TAG_COLORS.LOCAL
+  const isDynamic = !DEFAULT_PANEL_IDS.has(panel.id) && !panel.id.startsWith('empty-')
+
+  // size에 따른 gridColumn span 계산
+  const colSpan = panel.isMaximized ? '1 / -1' : panel.size === 'large' ? 'span 2' : undefined
 
   return (
     <motion.div
       className="flex flex-col rounded-lg border overflow-hidden"
       style={{
         backgroundColor: '#0a0a18',
-        borderColor: isMain ? 'rgba(168,85,247,0.4)' : 'rgba(255,255,255,0.05)',
-        boxShadow: isMain ? '0 0 20px rgba(168,85,247,0.15)' : 'none',
-        gridColumn: panel.isMaximized ? '1 / -1' : undefined,
+        borderColor: isMain ? 'rgba(168,85,247,0.4)' : isDynamic ? 'rgba(34,211,238,0.3)' : 'rgba(255,255,255,0.05)',
+        boxShadow: isMain ? '0 0 20px rgba(168,85,247,0.15)' : isDynamic ? '0 0 12px rgba(34,211,238,0.08)' : 'none',
+        gridColumn: colSpan,
         gridRow: panel.isMaximized ? '1 / -1' : undefined,
       }}
       initial={{ opacity: 0, scale: 0.9, y: 12 }}
@@ -127,6 +143,19 @@ export default function InvestigationPanel({ panel, index, isMain }: Investigati
             )}
           </svg>
         </button>
+
+        {/* Remove (동적 패널만) */}
+        {isDynamic && (
+          <button
+            onClick={() => removePanel(panel.id)}
+            className="text-t4 hover:text-red-400 transition-colors"
+            title="Remove panel"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Body */}

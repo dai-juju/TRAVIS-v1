@@ -316,3 +316,184 @@ Phase 2 is split into 4 sub-phases (2A → 2B → 2C → 2D). Complete in order.
 10. User clicks chip → sees cross-analysis pattern with confidence score
 11. User double-clicks node → Investigation Mode with all 6 panels populated
 12. AI chat shows typing animation, clicking nodes triggers AI analysis
+
+---
+
+# PHASE 3: AI TOOL ARSENAL + PERSONALIZATION
+
+## Overview
+Phase 3 transforms TRAVIS from "chatbot trapped in training data" into "JARVIS that queries real data and adapts to each user."
+Core philosophy: Give AI sufficient tools + principles only. No hardcoded procedures.
+Phase 3 is split into 2 sub-phases (3A → 3B). Complete in order.
+**Phase 3A: COMPLETE ✅** — Phase 3B: pending.
+
+---
+
+## Phase 3A: AI Tool Arsenal + Perceived Speed Revolution ✅
+**Goal**: AI queries real data instead of guessing. Any coin supported. Multi-card spawning in one call. Perceived speed ×2.
+
+### 3A-1: Dynamic Symbol Resolution ✅
+- [x] CoinGecko /search API for auto-resolving any coin (symbol, name, Korean name)
+- [x] Session cache (Map) + Korean coin name mapping
+- [x] Removed KNOWN_SYMBOLS/SYMBOL_REGEX hardcoding
+
+### 3A-2: fetch_coin_data Tool ✅
+- [x] CoinGecko + Binance 종합 데이터 (coinDataApi.ts)
+- [x] Dynamic symbol resolution + optional futures data
+- [x] 5-step pattern: API → IPC → preload → TOOLS → executeTool
+
+### 3A-3: fetch_market_overview Tool ✅
+- [x] CoinGecko /global + Alternative.me F&G + Top gainers/losers (marketOverviewApi.ts)
+
+### 3A-4: fetch_derivatives_data Tool ✅ (renamed from fetch_funding_rates)
+- [x] Binance Futures 8개 API (derivativesApi.ts)
+- [x] Funding rate, OI, global L/S, top trader L/S, taker B/S, OI history, liquidations
+
+### 3A-5: fetch_whale_activity Tool ✅
+- [x] Large trades + order book walls (whaleApi.ts)
+
+### 3A-6: fetch_trending Tool ✅
+- [x] CoinGecko /search/trending (trendingApi.ts)
+
+### 3A-7: spawn_multiple_cards Tool ✅
+- [x] Batch card + webview creation with grid layout + auto-edges
+
+### 3A-8: Skeleton Cards ✅
+- [x] isLoading shimmer → content transition (integrated into Card.tsx)
+
+### 3A-9: SSE/Tool Timeout + Error Handling ✅
+- [x] SSE 60s timeout, Tool 30s timeout
+- [x] fetchWithRetry (exponential backoff for CoinGecko)
+
+### 3A-10: Sound Feedback ✅
+- [x] Web Audio API (soundService.ts) — boot, card spawn, AI response
+
+### 3A-11: API Retry + Stability ✅
+- [x] fetchWithRetry, empty catch fix, scoring parse fix, tool loop review
+
+### 3A-12: CCXT 6-Exchange Integration ✅
+- [x] Binance, Upbit, Bybit, Bithumb, OKX, Coinbase (exchangeService.ts)
+- [x] fetch_exchange_price + compare_exchange_prices + 김치 프리미엄
+
+### 3A-13+14: CCXT Pro WebSocket ✅
+- [x] exchangeWsService.ts — 통합 실시간 시세/대형체결
+- [x] Lazy connection, 5min idle disconnect
+
+### 3A-15: CoinMarketCap API ✅
+- [x] 보조 데이터 소스 (cmcApi.ts), Settings 키 관리
+- [x] fetch_coin_data + fetch_market_overview 보강
+
+### 3A-16: Investigation Mode Dynamic Panels ✅
+- [x] update_investigation 도구 — add/remove/update/reorder/reset panels
+- [x] Dynamic grid, cyan border for AI-added panels
+
+### 3A-17: Webview Control Tools ✅
+- [x] control_webview — navigate, resize, tv_change_symbol, tv_change_interval
+- [x] webviewRefs Map for DOM access
+
+**Result**: 7 → 17 AI tools. 1 → 6 exchanges. Any coin supported. Skeleton cards + sound + timeouts.
+
+---
+
+## Phase 3B: Personalization + Memory System (2-3 weeks)
+**Goal**: "AI that knows me" + "continue where I left off" + multilingual support.
+
+### 3B-1: Onboarding Flow
+- [ ] Create src/renderer/components/Onboarding.tsx
+  - Full-screen overlay on first launch
+  - 5-step wizard:
+    1. 사용하는 거래소 (복수 선택): Binance, Bybit, Upbit, OKX, Bitget, 기타
+    2. 주 거래소 (위에서 선택한 것 중 1개)
+    3. 트레이딩 스타일: 현물 / 선물 / 둘 다 / DeFi / 장기투자
+    4. 관심 종목 (Watchlist): 자유 입력
+    5. 선호 언어: 한국어 / English / 자동 감지
+  - Optional advanced: 경험 수준, 중시 지표, 투자 성향
+  - Skip 가능 but 완료 시 차이 체감
+- [ ] App.tsx: 프로필 없으면 Onboarding 먼저 표시
+- [ ] Verify: 첫 실행 → 온보딩 → 프로필 저장 → 메인 화면
+
+### 3B-2: User Profile System
+- [ ] Create UserProfile interface in types
+  - exchanges, primaryExchange, tradingStyle, watchlist, language
+  - experienceLevel?, preferredIndicators?, riskProfile?
+  - frequentCoins?, customDefinitions?
+- [ ] Create src/renderer/stores/useProfileStore.ts
+- [ ] Save to electron-store (persistent)
+- [ ] Settings modal: "프로필 수정" 버튼
+- [ ] Verify: Profile persists across restarts
+
+### 3B-3: System Prompt Injection (Principle-Based)
+- [ ] Update claude.ts system prompt:
+  - Remove hardcoded Analysis Protocol
+  - Add [AI PRINCIPLES] section
+  - Add [USER PROFILE] section (from useProfileStore)
+  - Add [PREVIOUS SESSION SUMMARY] section
+  - Add [USER CUSTOM DEFINITIONS] section
+- [ ] Verify: System prompt dynamically includes user profile
+
+### 3B-4: Watchlist Preloading
+- [ ] On app start: read profile.watchlist
+- [ ] Background fetch: price + news for watchlist coins (Promise.all, 5s timeout)
+- [ ] Cache in memory, serve to AI on first query
+- [ ] Cold start → BTC, ETH, SOL default preload
+- [ ] Verify: First watchlist coin query responds faster
+
+### 3B-5: SQLite Episodic Memory
+- [ ] Install better-sqlite3
+- [ ] Create src/main/database.ts — setup + migrations
+- [ ] Tables: sessions, mentions, insights, custom_definitions
+- [ ] IPC handlers for DB operations
+- [ ] Auto-save session on app close
+- [ ] Verify: Session data persists across restarts
+
+### 3B-6: Custom Definitions (주관적 표현 학습)
+- [ ] AI detects user expressions → stores in custom_definitions
+- [ ] Inject [USER CUSTOM DEFINITIONS] into system prompt
+- [ ] Style Anchor: maintain user's investment philosophy
+- [ ] Verify: AI uses custom terms correctly in subsequent sessions
+
+### 3B-7: Canvas Save/Restore
+- [ ] CanvasSnapshot: cards, webviews, camera, session ID
+- [ ] Auto-save on app close
+- [ ] "이전 작업 이어서 보기" option on start
+- [ ] Verify: Close → reopen → cards restored
+
+### 3B-8: Session Summary Generation
+- [ ] On session end: Haiku compresses conversation summary
+- [ ] Store in sessions table
+- [ ] Next session: inject [PREVIOUS SESSION SUMMARY]
+- [ ] Verify: AI recalls previous session context
+
+### 3B-9: i18n (Korean/English)
+- [ ] Create src/renderer/i18n/ with ko.json, en.json
+- [ ] All UI text uses i18n keys
+- [ ] Language follows profile.language
+- [ ] Verify: Switch language → all UI changes
+
+### 3B-10: News Translation
+- [ ] English news → Korean via Haiku (batch, async, cached)
+- [ ] Original + translated toggle
+- [ ] Verify: English news appears translated for Korean users
+
+### 3B-11: AI Self-Awareness of Limitations
+- [ ] Tool failure → explicit "데이터 가져올 수 없음" message
+- [ ] Training data fallback → "실시간 아닐 수 있음" disclaimer
+- [ ] Investment disclaimer toggle
+- [ ] Verify: AI communicates uncertainty clearly
+
+### 3B-12: Autonomous Data Subscription Step 1
+- [ ] Watchlist-based auto WebSocket subscription
+- [ ] Price alert: watchlist coin ±5% → auto notification card
+- [ ] News filter: watchlist priority
+- [ ] Verify: Watchlist coin spike → alert auto-spawns
+
+**Done when**: Onboarding, profile-driven AI, episodic memory, canvas save/restore, i18n, AI limitations awareness.
+
+---
+
+## Phase 3 Deferred (Post-Team)
+- Autonomous data subscription Step 2-3
+- CCXT 100+ exchanges
+- Advanced webview DOM control
+- Mobile/web version
+- Advanced custom definitions learning

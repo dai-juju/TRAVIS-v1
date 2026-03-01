@@ -1,20 +1,27 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
+// onComplete: 부팅 애니메이션이 끝나면 호출되는 콜백 함수
 interface BootSequenceProps {
   onComplete: () => void
 }
 
+// 부팅 시 하나씩 표시되는 상태 메시지 목록
 const STATUS_MESSAGES = [
   'Connecting to market data...',
   'AI systems online...',
   'Canvas ready.',
 ]
 
+// 앱 시작 시 보여주는 부팅 애니메이션 — TRAVIS 로고와 상태 메시지를 순차적으로 표시 후 페이드아웃
 export default function BootSequence({ onComplete }: BootSequenceProps) {
+  // phase: 부팅 애니메이션 단계 (어둠 → 로고 → 상태 메시지 → 사라짐)
   const [phase, setPhase] = useState<'dark' | 'logo' | 'status' | 'fadeout'>('dark')
+  // visibleStatuses: 현재까지 표시된 상태 메시지 개수
   const [visibleStatuses, setVisibleStatuses] = useState(0)
 
+  // 부팅 애니메이션 타이밍 제어 — 각 단계를 시간 간격으로 순차 실행
+  // 0.3초: 로고 표시 → 1초: 첫 상태 메시지 → 1.6초: 두번째 → 2.2초: 세번째 → 2.8초: 페이드아웃 → 3.5초: 완료
   useEffect(() => {
     const timers = [
       setTimeout(() => setPhase('logo'), 300),
@@ -38,7 +45,7 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
       animate={{ opacity: fading ? 0 : 1 }}
       transition={{ duration: 0.6, ease: 'easeInOut' }}
     >
-      {/* Logo + Rings */}
+      {/* 로고 + 궤도 링 애니메이션 — 어둠 단계가 끝나면 표시 */}
       {phase !== 'dark' && (
         <motion.div
           className="relative"
@@ -77,7 +84,7 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
         </motion.div>
       )}
 
-      {/* Status messages */}
+      {/* 상태 메시지 — "Connecting to market data..." 등 하나씩 순차 표시 */}
       {(phase === 'status' || phase === 'fadeout') && (
         <div className="mt-12 flex flex-col items-center gap-1.5 font-mono text-xs">
           {STATUS_MESSAGES.map((msg, i) => (

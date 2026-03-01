@@ -4,8 +4,10 @@ import { useFeedStore } from '../stores/useFeedStore'
 import { getCoordinates } from '../utils/geoKeywords'
 import type { FeedItem, FeedImportance } from '../types'
 
+// 세계 지도 데이터 소스 URL (국가 경계선 데이터)
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 
+// 중요도별 핀 색상 — 빨강(긴급), 노랑(주의), 보라(신호), 회색(정보)
 const IMPORTANCE_COLOR: Record<FeedImportance, string> = {
   critical: '#ef4444',
   alert: '#f59e0b',
@@ -20,6 +22,7 @@ const IMPORTANCE_ORDER: Record<FeedImportance, number> = {
   info: 3,
 }
 
+// 같은 위치에 여러 뉴스가 있을 때 가장 높은 중요도를 반환
 function getTopImportance(items: FeedItem[]): FeedImportance {
   let top: FeedImportance = 'info'
   for (const item of items) {
@@ -31,19 +34,23 @@ function getTopImportance(items: FeedItem[]): FeedImportance {
   return top
 }
 
+// 지도 위 핀 그룹 데이터 — 같은 위치의 뉴스들을 묶어서 하나의 핀으로 표시
 interface PinGroup {
-  location: string
-  coordinates: [number, number]
-  items: FeedItem[]
-  topImportance: FeedImportance
-  isRecent: boolean
+  location: string              // 위치 이름 (예: "Washington DC", "Tokyo")
+  coordinates: [number, number] // 경도, 위도
+  items: FeedItem[]             // 해당 위치의 뉴스 목록
+  topImportance: FeedImportance // 가장 높은 중요도
+  isRecent: boolean             // 최근 5분 이내 뉴스가 있는지 여부
 }
 
+// 세계 지도 컴포넌트 — 뉴스의 발생 위치를 지도 위에 핀으로 표시
+// 핀에 마우스를 올리면 해당 위치의 뉴스 목록 툴팁 표시
 export default function WorldMap() {
   const items = useFeedStore((s) => s.items)
   const [hoveredLocation, setHoveredLocation] = useState<string | null>(null)
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
 
+  // 뉴스 아이템을 위치별로 그룹화하고 좌표를 매핑하여 핀 데이터 생성
   const pinGroups = useMemo<PinGroup[]>(() => {
     const withLocation = items.filter((i) => i.location)
     const groups = new Map<string, FeedItem[]>()

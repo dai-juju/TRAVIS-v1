@@ -1,7 +1,10 @@
+// latency: 데이터 지연 시간 (밀리초). null이면 데이터 없음
 interface LatencyIndicatorProps {
   latency: number | null
 }
 
+// 데이터 지연 시간 표시기 — 카드 헤더에 표시되는 실시간 데이터의 지연 상태
+// 1초 미만: 초록(양호), 1~5초: 노랑(주의), 5초 이상: 빨강(지연), 데이터 없음: 회색
 export default function LatencyIndicator({ latency }: LatencyIndicatorProps) {
   let color: string
   let label: string

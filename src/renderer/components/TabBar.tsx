@@ -1,12 +1,16 @@
 import { useTabStore } from '../stores/useTabStore'
 
+// 탭 정의 — COMMAND(캔버스+채팅 모드)와 FEED(전체 피드 보기) 두 가지
 const TABS = [
   { key: 'command' as const, label: '◈ COMMAND' },
   { key: 'feed' as const, label: '◈ FEED' },
 ]
 
+// 상단 탭 바 컴포넌트 — COMMAND 탭과 FEED 탭 사이를 전환하는 네비게이션
 export default function TabBar() {
+  // 현재 활성화된 탭
   const activeTab = useTabStore((s) => s.activeTab)
+  // 탭 변경 함수
   const setTab = useTabStore((s) => s.setTab)
 
   return (
@@ -14,6 +18,7 @@ export default function TabBar() {
       {TABS.map((tab) => {
         const isActive = activeTab === tab.key
         return (
+          // 탭 버튼 — 클릭 시 해당 탭으로 전환
           <button
             key={tab.key}
             onClick={() => setTab(tab.key)}
@@ -22,6 +27,7 @@ export default function TabBar() {
             }`}
           >
             {tab.label}
+            {/* 활성 탭 하단에 보라색 강조 표시 */}
             {isActive && (
               <div
                 className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-pb"

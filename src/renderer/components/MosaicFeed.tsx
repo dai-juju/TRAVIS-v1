@@ -4,9 +4,14 @@ import MultiColumnFeed from './MultiColumnFeed'
 import WorldMap from './WorldMap'
 import EventCalendar from './EventCalendar'
 
+// FEED 탭의 메인 컴포넌트 — 세계지도/캘린더, 피드 사이드바, 7열 카테고리 피드를 조합한 화면
+// 상단: 세계지도 또는 이벤트 캘린더 + 오른쪽 전체 피드
+// 하단: 카테고리별 7열 피드 (드래그 핸들로 높이 조절 가능)
 export default function MosaicFeed() {
   const containerRef = useRef<HTMLDivElement>(null)
+  // bottomHeight: 하단 7열 피드 영역의 높이 (0이면 접혀있음)
   const [bottomHeight, setBottomHeight] = useState(0)
+  // leftView: 좌측 영역에 세계지도를 표시할지 캘린더를 표시할지 선택
   const [leftView, setLeftView] = useState<'map' | 'calendar'>('map')
   const [isDraggingState, setIsDraggingState] = useState(false)
   const isDragging = useRef(false)
@@ -14,6 +19,7 @@ export default function MosaicFeed() {
   const dragStartHeight = useRef(0)
   const dragMoved = useRef(false)
 
+  // 구분선 드래그 시작 — 상단/하단 영역 비율을 조절하기 위해 마우스 위치 추적 시작
   const handleDragStart = useCallback((e: React.MouseEvent) => {
     isDragging.current = true
     dragMoved.current = false
@@ -24,6 +30,8 @@ export default function MosaicFeed() {
     document.body.style.userSelect = 'none'
   }, [bottomHeight])
 
+  // 구분선 드래그 중 높이 조절 및 드래그 종료 처리
+  // 클릭만 하면(드래그 없이) 하단 영역을 열기/닫기 토글
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging.current || !containerRef.current) return

@@ -1,5 +1,6 @@
 import type { FeedItem as FeedItemType, FeedCategory, FeedImportance } from '../types'
 
+// 카테고리별 왼쪽 테두리 색상 — 뉴스 항목의 카테고리를 시각적으로 구분
 const CATEGORY_COLORS: Record<FeedCategory, string> = {
   macro: '#f59e0b',
   crypto: '#a855f7',
@@ -10,6 +11,7 @@ const CATEGORY_COLORS: Record<FeedCategory, string> = {
   world: '#ec4899',
 }
 
+// 중요도별 뱃지 스타일 — CRIT(긴급), ALERT(주의), SIG(신호), info는 뱃지 없음
 const IMPORTANCE_BADGE: Record<FeedImportance, { label: string; bg: string; text: string } | null> = {
   critical: { label: 'CRIT', bg: 'rgba(239,68,68,0.2)', text: '#f87171' },
   alert: { label: 'ALERT', bg: 'rgba(245,158,11,0.2)', text: '#fbbf24' },
@@ -17,6 +19,7 @@ const IMPORTANCE_BADGE: Record<FeedImportance, { label: string; bg: string; text
   info: null,
 }
 
+// 중요도별 제목 텍스트 스타일 — 높은 중요도일수록 밝고 굵게 표시
 const TITLE_CLASSES: Record<FeedImportance, string> = {
   critical: 'text-t1 font-semibold',
   alert: 'text-t1',
@@ -24,6 +27,7 @@ const TITLE_CLASSES: Record<FeedImportance, string> = {
   info: 'text-t3',
 }
 
+// 타임스탬프를 상대 시간으로 변환 (예: "방금", "5분 전", "2시간 전")
 function formatRelativeTime(ts: number): string {
   const diff = Date.now() - ts
   const sec = Math.floor(diff / 1000)
@@ -36,20 +40,25 @@ function formatRelativeTime(ts: number): string {
   return `${day}일 전`
 }
 
+// item: 개별 뉴스/피드 아이템 데이터
 interface Props {
   item: FeedItemType
 }
 
+// 개별 뉴스 아이템 컴포넌트 — 뉴스 제목, 출처, 시간, AI 중요도 점수를 한 줄로 표시
+// 클릭하면 원본 뉴스 URL을 브라우저에서 열고, 드래그하면 캔버스에 카드로 추가 가능
 export default function FeedItem({ item }: Props) {
   const catColor = CATEGORY_COLORS[item.category]
   const effectiveImportance = item.aiImportance ?? item.importance
   const badge = IMPORTANCE_BADGE[effectiveImportance]
   const titleClass = TITLE_CLASSES[effectiveImportance]
 
+  // 뉴스 아이템 클릭 시 외부 브라우저에서 원본 기사 열기
   const handleClick = () => {
     window.open(item.url, '_blank')
   }
 
+  // 뉴스 아이템을 드래그하여 캔버스에 카드로 생성할 수 있도록 데이터 전달
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('application/json', JSON.stringify(item))
     e.dataTransfer.effectAllowed = 'copy'
@@ -88,7 +97,7 @@ export default function FeedItem({ item }: Props) {
         )}
       </div>
 
-      {/* AI 스코어 바 */}
+      {/* AI 스코어 바 — AI가 평가한 관련도 점수를 시각적 막대로 표시 (0~100%) */}
       {item.relevanceScore != null && (
         <div className="mt-1 h-[2px] rounded-full bg-white/5 overflow-hidden">
           <div

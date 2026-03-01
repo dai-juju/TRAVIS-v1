@@ -2,7 +2,11 @@ import { useRef, useCallback, useState, useEffect } from 'react'
 import { useCanvasStore } from '../stores/useCanvasStore'
 import type { WebviewData } from '../types'
 
-// Domain → keyword mappings for auto-edge detection
+// 웹뷰 DOM 참조 레지스트리 — AI 도구(control_webview)에서 웹뷰를 직접 조작할 때 사용
+// 카드 ID → webview DOM element (loadURL, executeJavaScript 등 호출 가능)
+export const webviewRefs = new Map<string, HTMLElement>()
+
+// 도메인별 키워드 매핑 — 웹뷰와 관련 카드를 자동으로 연결선으로 잇기 위한 매핑 테이블
 const DOMAIN_KEYWORDS: Record<string, string[]> = {
   'binance.com': ['binance', 'bnb'],
   'coinbase.com': ['coinbase'],
@@ -16,16 +20,20 @@ const DOMAIN_KEYWORDS: Record<string, string[]> = {
   'bybit.com': ['bybit'],
 }
 
+// card: 웹뷰 카드 데이터 (URL, 제목, 위치 등)
 interface WebviewCardProps {
   card: WebviewData
 }
 
+// 웹뷰 카드 컴포넌트 — 외부 웹사이트(트레이딩뷰, 코인게코 등)를 캔버스에 직접 임베드하여 표시
+// 드래그 이동, 크기 조절, 새로고침, 외부 브라우저 열기 등 지원
 export default function WebviewCard({ card }: WebviewCardProps) {
   const updateCardPosition = useCanvasStore((s) => s.updateCardPosition)
   const updateCardSize = useCanvasStore((s) => s.updateCardSize)
   const removeCard = useCanvasStore((s) => s.removeCard)
   const updateWebviewMeta = useCanvasStore((s) => s.updateWebviewMeta)
 
+  // isLoading: 웹페이지 로딩 중 여부, hasFailed: 로딩 실패 여부
   const [isLoading, setIsLoading] = useState(true)
   const [hasFailed, setHasFailed] = useState(false)
   const webviewRef = useRef<HTMLElement>(null)
@@ -35,7 +43,7 @@ export default function WebviewCard({ card }: WebviewCardProps) {
   const dragStart = useRef({ x: 0, y: 0, cardX: 0, cardY: 0 })
   const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0 })
 
-  // Auto-edge: match webview keywords against canvas cards
+  // 자동 연결선 생성 — 웹뷰의 제목/URL 키워드와 캔버스의 다른 카드를 매칭하여 자동으로 연결선 생성
   const checkWebviewEdges = useCallback((title: string, url: string) => {
     const store = useCanvasStore.getState()
 
@@ -80,7 +88,7 @@ export default function WebviewCard({ card }: WebviewCardProps) {
     }
   }, [card.id])
 
-  // Capture webview metadata (title + URL)
+  // 웹뷰의 현재 제목과 URL 정보를 캡처하여 저장소에 업데이트
   const captureMetadata = useCallback(() => {
     const wv = webviewRef.current as any
     if (!wv) return
@@ -94,10 +102,14 @@ export default function WebviewCard({ card }: WebviewCardProps) {
     } catch { /* webview not ready */ }
   }, [card.id, updateWebviewMeta, checkWebviewEdges])
 
-  // Webview 이벤트 바인딩
+  // 웹뷰 이벤트 바인딩 — 로딩 시작/완료/실패, 페이지 이동, 제목 변경 감지
+  // + webviewRefs 레지스트리에 등록/해제 (AI 도구에서 DOM 접근용)
   useEffect(() => {
     const wv = webviewRef.current
     if (!wv) return
+
+    // webviewRefs 레지스트리에 등록 — control_webview 도구에서 참조
+    webviewRefs.set(card.id, wv)
 
     const onLoadStart = () => { setIsLoading(true); setHasFailed(false) }
     const onLoadStop = () => { setIsLoading(false); captureMetadata() }
@@ -112,14 +124,17 @@ export default function WebviewCard({ card }: WebviewCardProps) {
     wv.addEventListener('page-title-updated', onTitleUpdated)
 
     return () => {
+      // 레지스트리에서 해제
+      webviewRefs.delete(card.id)
       wv.removeEventListener('did-start-loading', onLoadStart)
       wv.removeEventListener('did-stop-loading', onLoadStop)
       wv.removeEventListener('did-fail-load', onFail)
       wv.removeEventListener('did-navigate-in-page', onNavigateInPage)
       wv.removeEventListener('page-title-updated', onTitleUpdated)
     }
-  }, [captureMetadata])
+  }, [card.id, captureMetadata])
 
+  // 웹페이지 새로고침 버튼 클릭 시 실행
   const handleReload = useCallback(() => {
     const wv = webviewRef.current as HTMLElement & { reload?: () => void }
     if (wv?.reload) {
@@ -128,11 +143,12 @@ export default function WebviewCard({ card }: WebviewCardProps) {
     }
   }, [])
 
+  // 외부 브라우저에서 URL 열기 — 임베드가 차단된 사이트일 때 사용
   const handleOpenExternal = useCallback(() => {
     window.open(card.url, '_blank')
   }, [card.url])
 
-  // --- Drag ---
+  // --- 웹뷰 카드 드래그 이동 --- 헤더를 마우스로 잡아 캔버스 위에서 이동
   const handleDragStart = useCallback(
     (e: React.MouseEvent) => {
       if (e.button !== 0) return
@@ -170,7 +186,7 @@ export default function WebviewCard({ card }: WebviewCardProps) {
     [card.id, card.x, card.y, updateCardPosition]
   )
 
-  // --- Resize ---
+  // --- 웹뷰 카드 크기 조절 --- 우하단 모서리를 드래그하여 크기 변경
   const handleResizeStart = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
@@ -207,7 +223,7 @@ export default function WebviewCard({ card }: WebviewCardProps) {
     [card.id, card.width, card.height, updateCardSize]
   )
 
-  // Display live title/URL if available
+  // 실시간으로 캡처된 제목/URL이 있으면 그것을 표시, 없으면 원래 값 사용
   const displayTitle = card.liveTitle || card.title
   const currentUrl = card.liveUrl || card.url
   const displayUrl = currentUrl.length > 45
